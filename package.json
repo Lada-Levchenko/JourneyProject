@@ -1,0 +1,50 @@
+{
+  "name": "journeyproject",
+  "version": "1.0.0",
+  "description": "",
+  "engines": {
+    "node": ">=22.20.0"
+  },
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace web run dev",
+    "dev:mobile": "npm --workspace mobile run start",
+    "dev:api": "npm --workspace api run start:dev",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "build:web": "npm --workspace web run build",
+    "build:mobile": "npm --workspace mobile run build",
+    "build:api": "npm --workspace api run build",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,js,jsx}\" \"packages/**/*.{ts,tsx,js,jsx}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.6.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "concurrently": "^8.2.0",
+    "eslint": "^9.36.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.22",
+    "globals": "^16.4.0",
+    "prettier": "^3.4.2",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lada-Levchenko/JourneyProject.git"
+  }
+}
