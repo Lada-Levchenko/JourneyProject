@@ -10,9 +10,13 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.4",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "tamagui": "^1.135.3"
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "tamagui": "^1.135.0"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "vite-plugin-svgr": "^4.5.0"
