@@ -4,21 +4,14 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
       "@types/*": ["packages/types/src/*"],
       "@ui/*": ["packages/ui/src/*"],
       "@utils/*": ["packages/utils/src/*"]
-    },
+    }
   },
-	"include": [
-		"packages/types/src/**/*",
-		"apps/**/*",
-		"packages/**/*"
-	]
+  "include": ["apps/**/*", "packages/**/*"]
 }
