@@ -5,10 +5,10 @@
     "moduleResolution": "nodenext",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "declaration": true,
+    //"declaration": true,
     "removeComments": true,
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "./src",
     "sourceMap": true,
     "incremental": true,
     "strictNullChecks": true

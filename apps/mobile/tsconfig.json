@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "target": "esnext",
     "jsx": "react-jsx",
     "module": "esnext",
     "moduleResolution": "node",
