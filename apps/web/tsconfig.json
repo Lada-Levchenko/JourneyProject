@@ -4,7 +4,12 @@
     "target": "esnext",
     "jsx": "react-jsx",
     "strict": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "types": ["vite/client"],
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": ["src/**/*", "../../packages/types/**/*"],
   "exclude": ["node_modules", "dist"]

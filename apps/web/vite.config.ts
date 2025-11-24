@@ -3,7 +3,6 @@ import { tamaguiPlugin } from "@tamagui/vite-plugin";
 
 export default {
   plugins: [
-    react(),
     tamaguiPlugin({
       // points to your tamagui config file
       config: "src/tamagui.config.ts",
@@ -13,5 +12,11 @@ export default {
       // turns on the optimizing compiler
       optimize: true,
     }),
+    react(),
   ].filter(Boolean),
+  resolve: {
+    alias: {
+      "@": "/src",
+    },
+  },
 };
