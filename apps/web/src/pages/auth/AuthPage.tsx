@@ -1,5 +1,5 @@
 // import { YStack } from "tamagui";
-// import { AuthPane } from "../../features/auth/ui/AuthPane";
+// import { AuthPanel } from "../../features/auth/ui/AuthPanel";
 // import bg from "../../shared/assets/images/auth-bg.png";
 
 // export function AuthPage() {
@@ -11,7 +11,7 @@
 //       backgroundRepeat="no-repeat"
 //       backgroundPosition="center"
 //     >
-//       <AuthPane />
+//       <AuthPanel />
 //       <YStack flex={1} alignContent="center" justifyContent="center">
 //         {/* etc */}
 //       </YStack>
@@ -19,13 +19,16 @@
 //   );
 // }
 
-import { AuthPane } from "@/features/auth/ui/AuthPane";
+import { AuthPanel } from "@/features/auth/ui/AuthPanel";
 import { BackgroundImage } from "@/shared/ui/BackgroundImage";
+import { CenterPane } from "@/shared/ui/CenterPane";
 
 export function AuthPage() {
   return (
     <BackgroundImage src="/images/auth-bg.png">
-      <AuthPane />
+      <CenterPane>
+        <AuthPanel />
+      </CenterPane>
     </BackgroundImage>
   );
 }
