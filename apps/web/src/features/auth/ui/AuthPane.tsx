@@ -11,9 +11,18 @@ export function AuthPane() {
             placeholder="Email"
             keyboardType="email-address"
             autoCapitalize="none"
+            // autoComplete="email"
+            // aria-label="Email"
           />
 
-          <Input placeholder="Password" secureTextEntry />
+          <Input
+            placeholder="Password"
+            secureTextEntry
+            // autoCapitalize="none"
+            // autoCorrect={false}
+            // autoComplete="current-password"
+            // aria-label="Password"
+          />
         </YStack>
       </Card>
     </YStack>

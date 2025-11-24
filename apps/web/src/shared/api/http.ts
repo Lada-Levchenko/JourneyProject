@@ -14,7 +14,8 @@ export async function apiFetch<T>(
   path: string,
   opts: RequestOptions = {},
 ): Promise<T> {
-  const res = await fetch(API_BASE + path, {
+  const url = path.startsWith("/") ? API_BASE + path : `${API_BASE}/${path}`;
+  const res = await fetch(url, {
     method: opts.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
@@ -23,11 +24,12 @@ export async function apiFetch<T>(
     body: opts.body ? JSON.stringify(opts.body) : undefined,
     credentials: "include", // so http-only cookies work
   });
-
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || "API error");
   }
 
-  return res.json() as Promise<T>;
+  // Handle empty responses (e.g., 204 No Content)
+  const text = await res.text();
+  return text ? JSON.parse(text) : ({} as T);
 }
