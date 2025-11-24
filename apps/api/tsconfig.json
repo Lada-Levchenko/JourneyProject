@@ -3,19 +3,15 @@
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "resolvePackageJsonExports": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "declaration": true,
+    //"declaration": true,
     "removeComments": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "sourceMap": true,
     "incremental": true,
-    "strictNullChecks": true,
-    "noImplicitAny": false
+    "strictNullChecks": true
   },
-  "include": [
-		"src/**/*",
-		"../../packages/types/**/*"
-	]
+  "include": ["src/**/*"]
 }

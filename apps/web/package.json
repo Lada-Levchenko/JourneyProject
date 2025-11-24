@@ -9,12 +9,30 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tamagui/animations-css": "1.135.7",
+    "@tamagui/config": "1.135.7",
+    "@tamagui/core": "1.135.7",
+    "@tamagui/create-theme": "1.135.7",
+    "@tamagui/react-native-svg": "1.135.7",
     "@vitejs/plugin-react": "^5.0.4",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "tamagui": "^1.135.3"
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "tamagui": "1.135.7",
+    "zustand": "^5.0.8"
+  },
+  "peerDependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5"
   },
   "devDependencies": {
+    "@tamagui/vite-plugin": "^1.135.7",
+    "@vitejs/plugin-react-swc": "^3.6.0",
     "vite-plugin-svgr": "^4.5.0"
   }
 }
