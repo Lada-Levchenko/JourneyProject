@@ -12,8 +12,13 @@ export const colors = {
   text: {
     primary: "#21272A", // #000000 opacity %87
   },
+  primary: {
+    main: "#5B7CFF",
+    contrastText: "#FFFFFF",
+  },
   secondary: {
     main: "#9C27B0",
+    dark: "#E5A354",
     contrastText: "#FFFFFF",
   },
 };

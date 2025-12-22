@@ -1,43 +1,31 @@
-import { Button } from "@/shared/ui/Button";
-import { Card, H4, Input, Paragraph, YStack } from "tamagui";
-import { colors } from "@/shared/tokens/design";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
+import { TextField, Typography } from "@mui/material";
 
 export function AuthPanel() {
   return (
-    <YStack gap="$4" padding="16px">
-      <Card.Header padded alignItems="center">
-        <H4>Welcome!</H4>
-        <Paragraph>Please log in to continue</Paragraph>
-      </Card.Header>
-      <YStack gap="$4">
-        <Input
-          placeholder="Email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          aria-label="Email"
-          borderRadius={0}
-        />
+    <Stack spacing={2} p={2}>
+      <Stack spacing={0.5} textAlign="center">
+        <Typography variant="h4">Welcome!</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Please log in to continue
+        </Typography>
+      </Stack>
 
-        <Input
-          placeholder="Password"
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
+      <Stack spacing={2}>
+        <TextField label="Email" type="email" autoComplete="email" fullWidth />
+
+        <TextField
+          label="Password"
+          type="password"
           autoComplete="current-password"
-          aria-label="Password"
-          borderRadius={0}
+          fullWidth
         />
 
-        <Button
-          onPress={() => console.log("signing in…")}
-          backgroundColor={colors.secondary.main}
-          color={colors.secondary.contrastText}
-          borderRadius={4}
-        >
+        <Button variant="contained" color="secondary">
           LOG IN
         </Button>
-      </YStack>
-    </YStack>
+      </Stack>
+    </Stack>
   );
 }

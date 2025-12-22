@@ -1,12 +1,12 @@
-import { TamaguiProvider } from "@tamagui/core";
-import config from "./tamagui.config";
-
 import { AuthPage } from "./pages/auth/AuthPage";
+import { ThemeProvider, CssBaseline } from "@mui/material";
+import { muiTheme } from "@/shared/theme/muiTheme";
 
 export default function App() {
   return (
-    <TamaguiProvider config={config} defaultTheme="light">
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
       <AuthPage />
-    </TamaguiProvider>
+    </ThemeProvider>
   );
 }

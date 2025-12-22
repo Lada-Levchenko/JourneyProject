@@ -3,7 +3,6 @@ dist/
 node_modules/
 build/
 tsconfig.build.tsbuildinfo
-.tamagui
 
 # Logs
 logs
