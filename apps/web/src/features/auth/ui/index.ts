@@ -1,1 +1,1 @@
-export * from "./AuthPane";
+export * from "./AuthPanel";
