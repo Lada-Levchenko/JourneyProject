@@ -7,8 +7,8 @@
     "experimentalDecorators": true,
     //"declaration": true,
     "removeComments": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "dist",
+    "rootDir": "src",
     "sourceMap": true,
     "incremental": true,
     "strictNullChecks": true
