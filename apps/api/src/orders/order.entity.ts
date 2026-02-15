@@ -43,6 +43,15 @@ export class Order {
   })
   status: OrderStatus;
 
+  @Column({
+    type: "varchar",
+    length: 120,
+    name: "idempotency_key",
+    nullable: true,
+    unique: true,
+  })
+  idempotencyKey: string | null;
+
   @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt: Date;
 

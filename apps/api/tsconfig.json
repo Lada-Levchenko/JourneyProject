@@ -1,8 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "commonjs",
+    "target": "ES2023",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     //"declaration": true,

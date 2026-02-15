@@ -6,9 +6,9 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "build": "nest build",
-    "db:generate": "typeorm-ts-node-commonjs -d data-source.ts migration:generate",
-    "db:migrate": "typeorm-ts-node-commonjs -d data-source.ts migration:run",
-    "db:revert": "typeorm-ts-node-commonjs -d data-source.ts migration:revert",
+    "db:generate": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:generate src/database/migrations/placeholder",
+    "db:migrate": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run",
+    "db:revert": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:revert",
     "db:seed": "ts-node -r tsconfig-paths/register src/database/seed/seed.ts"
   },
   "dependencies": {
@@ -17,6 +17,8 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.1.12",
     "@nestjs/typeorm": "^11.0.0",
+    "class-validator": "^0.14.3",
+    "pg": "^8.18.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

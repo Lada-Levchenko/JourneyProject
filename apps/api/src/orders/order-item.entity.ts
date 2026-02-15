@@ -12,6 +12,8 @@ import { Product } from "./../products/product.entity";
 @Entity("order_items")
 @Index("IDX_order_items_order_id", ["orderId"])
 @Index("IDX_order_items_product_id", ["productId"])
+// Ensure a product can only appear once per order
+@Index("UQ_order_product", ["orderId", "productId"], { unique: true })
 export class OrderItem {
   @PrimaryGeneratedColumn("uuid")
   id: string;

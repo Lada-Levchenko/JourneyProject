@@ -8,6 +8,9 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 import { OrderItem } from "../orders/order-item.entity";
+import { ProductType } from "./product-type.enum";
+import { ProductCategory } from "./product-category.enum";
+import { PurchasePolicy } from "./purchase-policy.enum";
 
 @Entity("products")
 @Index("IDX_products_title_unique", ["title"], { unique: true })
@@ -18,8 +21,32 @@ export class Product {
   @Column({ type: "varchar", length: 200 })
   title: string;
 
-  @Column("numeric", { precision: 12, scale: 2 })
-  price: string;
+  @Column({
+    type: "enum",
+    enum: ProductType,
+    default: ProductType.DONATION,
+  })
+  type: ProductType;
+
+  @Column({
+    type: "enum",
+    enum: ProductCategory,
+    default: ProductCategory.SUPPORT,
+  })
+  category: ProductCategory;
+
+  @Column({
+    type: "enum",
+    enum: PurchasePolicy,
+    default: PurchasePolicy.REPEATABLE,
+  })
+  purchasePolicy: PurchasePolicy;
+
+  @Column("numeric", { precision: 12, scale: 2, nullable: true })
+  price: string | null;
+
+  @Column({ type: "int", nullable: true })
+  stock: number | null;
 
   @Column({ type: "boolean", name: "is_active", default: true })
   isActive: boolean;
