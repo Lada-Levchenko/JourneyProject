@@ -5,7 +5,8 @@ import { UsersService } from "./users.service";
 export class UsersController {
   constructor(private usersService: UsersService) {}
   @Get(":id")
-  findOne(@Param("id") id: string): string {
-    return this.usersService.findOne(id)?.name || "User not found";
+  async findOne(@Param("id") id: string): Promise<string> {
+    const user = await this.usersService.findById(id);
+    return user?.email ?? "User not found";
   }
 }
