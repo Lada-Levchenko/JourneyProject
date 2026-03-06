@@ -4,12 +4,13 @@ import { AppDataSource as dataSource } from "../data-source";
 
 import { User } from "../../users/user.entity";
 import { Product } from "../../products/product.entity";
-import { Order, OrderStatus } from "../../orders/order.entity";
+import { Order } from "../../orders/order.entity";
 import { OrderItem } from "../../orders/order-item.entity";
 
 import { ProductType } from "../../products/product-type.enum";
 import { ProductCategory } from "../../products/product-category.enum";
 import { PurchasePolicy } from "../../products/purchase-policy.enum";
+import { OrderStatus } from "../../orders/order-status.enum";
 
 type SeedOrderItem = {
   id: string;

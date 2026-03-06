@@ -11,17 +11,15 @@ import {
 } from "typeorm";
 import { User } from "../users/user.entity";
 import { OrderItem } from "./order-item.entity";
+import { OrderStatus } from "./order-status.enum";
+import { ObjectType, Field, ID, GraphQLISODateTime } from "@nestjs/graphql";
 
-export enum OrderStatus {
-  CREATED = "CREATED",
-  PAID = "PAID",
-  CANCELLED = "CANCELLED",
-}
-
+@ObjectType()
 @Entity("orders")
 @Index("IDX_orders_user_id", ["userId"])
 @Index("IDX_orders_created_at", ["createdAt"])
 export class Order {
+  @Field(() => ID)
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
@@ -32,9 +30,11 @@ export class Order {
   @JoinColumn({ name: "user_id" })
   user: User;
 
+  @Field(() => [OrderItem])
   @OneToMany(() => OrderItem, (item) => item.order)
   items: OrderItem[];
 
+  @Field(() => OrderStatus)
   @Column({
     type: "enum",
     enum: OrderStatus,
@@ -43,6 +43,7 @@ export class Order {
   })
   status: OrderStatus;
 
+  @Field(() => String, { nullable: true })
   @Column({
     type: "varchar",
     length: 120,
@@ -52,9 +53,11 @@ export class Order {
   })
   idempotencyKey: string | null;
 
+  @Field(() => GraphQLISODateTime)
   @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt: Date;
 
+  @Field(() => GraphQLISODateTime)
   @UpdateDateColumn({ type: "timestamptz", name: "updated_at" })
   updatedAt: Date;
 }
