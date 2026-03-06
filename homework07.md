@@ -4,7 +4,7 @@
 
 У проєкті використовується підхід code-first, оскільки він уже побудований на основі TypeORM-сутностей і активно розвивається. code-first мінімізує дублювання коду та дозволяє автоматично підтримувати схему в актуальному стані відповідно до доменної моделі яка поки знаходиться в стані частих змін.
 
-Коли більшість роботи по структуризації данних буде зроблена і будуть зрозумілі потреби основних екранів додатку, буде розгляну перехід на schema-first підхід.
+Коли більшість роботи по структуризації данних буде зроблена і будуть зрозумілі потреби основних екранів додатку, розгляну перехід на schema-first підхід.
 
 ## Як реалізований orders query
 
@@ -69,6 +69,7 @@ query: SELECT "order"."id" AS "order_id", "order"."user_id" AS "order_user_id", 
 query: SELECT "Product"."id" AS "Product_id", "Product"."title" AS "Product_title", "Product"."type" AS "Product_type", "Product"."category" AS "Product_category", "Product"."purchasePolicy" AS "Product_purchasePolicy", "Product"."price" AS "Product_price", "Product"."stock" AS "Product_stock", "Product"."is_active" AS "Product_is_active", "Product"."created_at" AS "Product_created_at", "Product"."updated_at" AS "Product_updated_at" FROM "products" "Product" WHERE (("Product"."id" IN ($1, $2, $3, $4))) -- PARAMETERS: ["f76c47bc-7f93-4f48-96eb-bff292a58fa8","79d1315a-873d-4ed6-8ee6-50bdbfd35464","f1d580b5-1228-4b81-9531-098711a99cee","58cc52be-cec3-4c2c-b650-a8b43674aa22"]
 ```
 
+DataLoader виконує batching запитів у межах одного GraphQL request і кешує результати в межах request.
 
 ## Приклад query
 
