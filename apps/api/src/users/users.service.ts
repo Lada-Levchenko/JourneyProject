@@ -31,4 +31,10 @@ export class UsersService {
   async findAll(): Promise<User[]> {
     return this.usersRepository.find();
   }
+
+  async attachAvatar(userId: string, fileId: string) {
+    await this.usersRepository.update(userId, {
+      avatarFileId: fileId,
+    });
+  }
 }

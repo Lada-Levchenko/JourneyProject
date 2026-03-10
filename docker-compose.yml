@@ -2,14 +2,17 @@ services:
   app:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: apps/api/Dockerfile.prod
     depends_on:
       - minio
 
     env_file:
       - ./apps/api/.env.local
+    environment:
+      DB_HOST: host.docker.internal
+      AWS_ENDPOINT: http://minio:9000
     ports:
-      - "${PORT:-3015}:3015"
+      - "${EXTERNAL_PORT:-3015}:3015"
     # volumes:
     #   - ./:/app
     #   - ./node_modules:/app/node_modules
