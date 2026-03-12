@@ -14,7 +14,7 @@
   "scripts": {
     "dev:web": "npm --workspace web run dev",
     "dev:mobile": "npm --workspace mobile run start",
-    "dev:api": "npm --workspace api run start:dev",
+    "dev:api": "npm --workspace api run dev",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "build:web": "npm --workspace web run build",
     "build:mobile": "npm --workspace mobile run build",
@@ -27,6 +27,7 @@
     "@eslint/js": "^9.36.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.6.0",
+    "@types/passport-jwt": "^4.0.1",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.0",
     "concurrently": "^8.2.0",
@@ -46,5 +47,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Lada-Levchenko/JourneyProject.git"
+  },
+  "dependencies": {
+    "@nestjs/passport": "^11.0.5",
+    "passport-jwt": "^4.0.1"
   }
 }

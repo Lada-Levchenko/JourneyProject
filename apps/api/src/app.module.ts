@@ -8,6 +8,7 @@ import { OrdersModule } from "./orders/orders.module";
 import { DatabaseModule } from "./database/database.module";
 import configuration from "./config/configuration";
 import { AuthModule } from "./auth/auth.module";
+import { GqlConfigModule } from "./graphql/graphql.module";
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AuthModule } from "./auth/auth.module";
       envFilePath: `.env.${process.env.NODE_ENV || "local"}`,
       load: [configuration],
     }),
+    GqlConfigModule,
 
     DatabaseModule,
 
