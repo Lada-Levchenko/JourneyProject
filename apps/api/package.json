@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@apollo/gateway": "^2.13.1",
+    "@nestjs/cli": "^11.0.16",
     "@nestjs/testing": "^11.1.6",
     "@types/bcrypt": "^6.0.0",
     "@types/multer": "^2.1.0",

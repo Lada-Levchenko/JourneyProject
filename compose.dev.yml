@@ -1,0 +1,17 @@
+services:
+  api:
+    build:
+      target: dev
+      dockerfile: apps/api/Dockerfile.dev
+    env_file:
+      - ./apps/api/.env.production
+    environment:
+      NODE_ENV: development
+      TSC_WATCHFILE: FixedPollingInterval
+      TSC_WATCHDIRECTORY: FixedPollingInterval
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev:api
