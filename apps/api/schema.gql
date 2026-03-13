@@ -85,7 +85,5 @@ enum PurchasePolicy {
 }
 
 type Query {
-  hello: String!
   orders(filter: OrdersFilterInput, pagination: OrdersPaginationInput): OrdersConnection!
-  testError: String!
 }
