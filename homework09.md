@@ -6,6 +6,8 @@
 
 Система використовує **MinIO** та реалізує підхід **presigned upload flow**.
 
+URL для upload і download формуються з окремим, зовнішнім url-endpoint, щоб бекенд міг стукатися до MinIO через docker-network, а користувач - через інтернет.
+
 Для опису типів файлів використовується enum `FileType`.
 У поточній реалізації підтримується тип `AVATAR`.
 
@@ -91,6 +93,7 @@ POST /api/files/complete
 Бекенд:
 
 - перевіряє ownership файлу
+- перевіряє наявність файлу у S3
 - змінює статус `pending → ready`
 - прив’язує файл до доменної сутності
 
@@ -150,10 +153,10 @@ GET /api/files/{fileId}
 
 ```json
 {
-	"id": "uuid",
-	"key": "users/{userId}/avatars/{uuid}.jpg",
-	"url": "<presignedUrl>",
-	"contentType": "image/jpeg",
-	"size": 0
+  "id": "uuid",
+  "key": "users/{userId}/avatars/{uuid}.jpg",
+  "url": "<presignedUrl>",
+  "contentType": "image/jpeg",
+  "size": 0
 }
 ```

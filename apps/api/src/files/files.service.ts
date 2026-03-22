@@ -10,6 +10,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 
 import { FileRecord } from "./file-record.entity";
@@ -24,9 +25,10 @@ import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class FilesService {
-  private readonly s3: S3Client;
+  private s3Internal: S3Client;
+  private s3External: S3Client;
   private readonly s3Bucket: string;
-  private readonly s3Endpoint: string;
+  private readonly s3ExternalEndpoint: string;
 
   constructor(
     private readonly configService: ConfigService,
@@ -34,15 +36,31 @@ export class FilesService {
     private readonly filesRepository: Repository<FileRecord>,
   ) {
     this.s3Bucket = this.configService.get<string>("AWS_S3_BUCKET")!;
-    this.s3Endpoint = this.configService.get<string>("AWS_S3_ENDPOINT")!;
-    this.s3 = new S3Client({
-      region: this.configService.get<string>("AWS_REGION"),
-      endpoint: this.s3Endpoint,
+    this.s3ExternalEndpoint =
+      this.configService.get<string>("AWS_S3_EXTERNAL_ENDPOINT") ||
+      this.configService.get<string>("AWS_S3_ENDPOINT")!;
+    const region = this.configService.get<string>("AWS_REGION");
+    const accessKeyId = this.configService.get<string>("AWS_ACCESS_KEY_ID")!;
+    const secretAccessKey = this.configService.get<string>(
+      "AWS_SECRET_ACCESS_KEY",
+    )!;
+
+    this.s3Internal = new S3Client({
+      region,
+      endpoint: this.configService.get<string>("AWS_S3_ENDPOINT")!,
       credentials: {
-        accessKeyId: this.configService.get<string>("AWS_ACCESS_KEY_ID")!,
-        secretAccessKey: this.configService.get<string>(
-          "AWS_SECRET_ACCESS_KEY",
-        )!,
+        accessKeyId,
+        secretAccessKey,
+      },
+      forcePathStyle: true,
+    });
+
+    this.s3External = new S3Client({
+      region,
+      endpoint: this.s3ExternalEndpoint,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
       },
       forcePathStyle: true,
     });
@@ -70,10 +88,9 @@ export class FilesService {
       Bucket: this.s3Bucket,
       Key: key,
       ContentType: dto.contentType,
-      ACL: "public-read",
     });
 
-    const uploadUrl = await getSignedUrl(this.s3, command, {
+    const uploadUrl = await getSignedUrl(this.s3External, command, {
       expiresIn: 300,
     });
 
@@ -102,7 +119,15 @@ export class FilesService {
       throw new BadRequestException("File already completed");
     }
 
+    const meta = await this.getObjectMeta(file.key);
+
+    if (!meta.exists) {
+      throw new BadRequestException("File was not uploaded to storage");
+    }
+
     file.status = FileStatus.READY;
+    file.size = meta.size;
+    file.contentType = meta.contentType ?? file.contentType;
 
     await this.filesRepository.save(file);
 
@@ -111,7 +136,7 @@ export class FilesService {
 
   getFileUrl(key: string) {
     // TODO: implement CloudFront
-    const endpoint = this.s3Endpoint;
+    const endpoint = this.s3ExternalEndpoint;
     const bucket = this.s3Bucket;
 
     return `${endpoint}/${bucket}/${key}`;
@@ -153,7 +178,7 @@ export class FilesService {
       Key: key,
     });
 
-    return getSignedUrl(this.s3, command, {
+    return getSignedUrl(this.s3External, command, {
       expiresIn: 300,
     });
   }
@@ -161,5 +186,29 @@ export class FilesService {
   async getSignedDownloadUrlByFileId(fileId: string) {
     const file = await this.getFile(fileId);
     return this.getSignedDownloadUrl(file.key);
+  }
+
+  async getObjectMeta(key: string) {
+    try {
+      const result = await this.s3Internal.send(
+        new HeadObjectCommand({
+          Bucket: this.s3Bucket,
+          Key: key,
+        }),
+      );
+
+      return {
+        exists: true,
+        size: result.ContentLength || 0,
+        contentType: result.ContentType,
+      };
+    } catch (e: any) {
+      console.log("HeadObject error:", e.name);
+      return {
+        exists: false,
+        size: 0,
+        contentType: null,
+      };
+    }
   }
 }
