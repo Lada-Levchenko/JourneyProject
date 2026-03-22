@@ -9,6 +9,7 @@ import { DatabaseModule } from "./database/database.module";
 import configuration from "./config/configuration";
 import { AuthModule } from "./auth/auth.module";
 import { GqlConfigModule } from "./graphql/graphql.module";
+import { FilesModule } from "./files/files.module";
 
 @Module({
   imports: [
@@ -21,11 +22,14 @@ import { GqlConfigModule } from "./graphql/graphql.module";
 
     DatabaseModule,
 
+    FilesModule,
+
     UsersModule,
     AuthModule,
 
     ProductsModule,
     OrdersModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
