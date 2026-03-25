@@ -1,162 +1,141 @@
-# homework09.md
+# homework10.md
 
-## Інтеграція Files / Storage
+Прошу зауважити, оскільки це монорепо, для запуску потрібно два env-файли:
 
-У цьому завданні з файловим сховищем інтегровано домен Users.
+- `.env` (є відповідний шаблон `.env.example`)
+- `apps/api/.env.production` (є відповідний шаблон `apps/api/.env.production.example`)
 
-Система використовує **MinIO** та реалізує підхід **presigned upload flow**.
+Змінні в них не дублюються. `.env` використовується для compose, і деякі змінні з нього прокидуються далі в контейнери.
 
-URL для upload і download формуються з окремим, зовнішнім url-endpoint, щоб бекенд міг стукатися до MinIO через docker-network, а користувач - через інтернет.
+## 1 Команди запуску
 
-Для опису типів файлів використовується enum `FileType`.
-У поточній реалізації підтримується тип `AVATAR`.
+### Development
 
----
+Запуск API у режимі розробки з hot reload:
 
-## Потік завантаження файлу
-
-### 1. Отримання presigned URL
-
-Клієнт робить запит:
-
-```
-POST /api/files/presign
-
-{
-"fileType": "avatar",
-"contentType": "image/jpeg"
-}
+```bash
+docker compose -f compose.yml -f compose.dev.yml up -d --build
 ```
 
-Бекенд:
+### Production-like
 
-- перевіряє доступ користувача
-- визначає тип файлу (`FileType`)
-- генерує ключ зберігання через helper (`generateKey`)
-- створює `FileRecord` у базі даних зі статусом `pending`
-- повертає presigned `uploadUrl`
-
-Приклад ключа:
-
-```
-users/{userId}/avatars/{uuid}.jpg
+```bash
+docker compose -f compose.yml up -d --build
 ```
 
-Приклад відповіді:
+### Distroless profile
 
-```
-{
-  "fileId": "uuid",
-  "key": "users/123/avatars/abc.jpg",
-  "uploadUrl": "https://...",
-  "contentType": "image/jpeg"
-}
+```bash
+docker compose --profile distroless up -d --build
 ```
 
----
+### Міграції та seed
 
-### 2. Завантаження файлу напряму у S3
+Через profile:
 
-Клієнт завантажує файл напряму у MinIO/S3 через `PUT uploadUrl`.
+```bash
+docker compose --profile tools up --build
+```
 
-Для перевірки:
+або:
+
+```bash
+docker compose run --rm migrate
+docker compose run --rm seed
+```
+
+## 2 Докази оптимізації
+
+### `docker image ls`
 
 ```powershell
-curl -T "<path-to-file>" -X PUT "<uploadURL>" -H "Content-Type: image/jpeg"
+REPOSITORY                      TAG       IMAGE ID       CREATED             SIZE
+journeyproject-api              latest    badb1e6d2a87   21 minutes ago      306MB
+journeyproject-api-distroless   latest    cf7a79c70c7a   About an hour ago   295MB
 ```
 
-Файл потрапляє у storage, але в системі ще має статус pending.
+### `docker history <image>`
 
----
-
-### 3. Підтвердження завантаження
-
-Клієнт викликає:
-
-```
-POST /api/files/complete
-
-{
-	"fileId": "uuid"
-}
-```
-
-Приклад відповіді:
-
-```json
-{
-  "fileId": "uuid",
-  "status": "ready"
-}
-```
-
-Бекенд:
-
-- перевіряє ownership файлу
-- перевіряє наявність файлу у S3
-- змінює статус `pending → ready`
-- прив’язує файл до доменної сутності
-
-У цьому завданні файл прив’язується до користувача:
-
-```
-User.avatarFileId
+```powershell
+> docker history journeyproject-api
+IMAGE          CREATED          CREATED BY                                      SIZE      COMMENT
+badb1e6d2a87   23 minutes ago   CMD ["node" "apps/api/dist/main.js"]            0B        buildkit.dockerfile.v0
+<missing>      23 minutes ago   EXPOSE map[3015/tcp:{}]                         0B        buildkit.dockerfile.v0
+<missing>      23 minutes ago   USER node                                       0B        buildkit.dockerfile.v0
+<missing>      23 minutes ago   COPY /app/apps/api/dist ./apps/api/dist # bu…   190kB     buildkit.dockerfile.v0
+<missing>      23 minutes ago   COPY /app/apps/api/package*.json ./apps/api/…   1.62kB    buildkit.dockerfile.v0
+<missing>      23 minutes ago   COPY /app/package*.json ./ # buildkit           990kB     buildkit.dockerfile.v0
+<missing>      23 minutes ago   COPY /app/node_modules ./node_modules # buil…   142MB     buildkit.dockerfile.v0
+<missing>      23 minutes ago   ENV NODE_ENV=production                         0B        buildkit.dockerfile.v0
+<missing>      2 days ago       WORKDIR /app                                    0B        buildkit.dockerfile.v0
+<missing>      7 days ago       CMD ["node"]                                    0B        buildkit.dockerfile.v0
+<missing>      7 days ago       ENTRYPOINT ["docker-entrypoint.sh"]             0B        buildkit.dockerfile.v0
+<missing>      7 days ago       COPY docker-entrypoint.sh /usr/local/bin/ # …   388B      buildkit.dockerfile.v0
+<missing>      7 days ago       RUN /bin/sh -c apk add --no-cache --virtual …   5.36MB    buildkit.dockerfile.v0
+<missing>      7 days ago       ENV YARN_VERSION=1.22.22                        0B        buildkit.dockerfile.v0
+<missing>      7 days ago       RUN /bin/sh -c addgroup -g 1000 node     && …   149MB     buildkit.dockerfile.v0
+<missing>      7 days ago       ENV NODE_VERSION=22.22.1                        0B        buildkit.dockerfile.v0
+<missing>      6 weeks ago      CMD ["/bin/sh"]                                 0B        buildkit.dockerfile.v0
+<missing>      6 weeks ago      ADD alpine-minirootfs-3.23.3-x86_64.tar.gz /…   8.44MB    buildkit.dockerfile.v0
 ```
 
----
-
-## Контроль доступу
-
-- Ключ (`key`) генерується виключно на бекенді
-- Користувач не може завантажувати файли у довільні префікси
-- Під час завершення завантаження перевіряється ownership
-
-```
-file.ownerId === currentUser.id
-```
-
-Це гарантує, що користувач не може завершити або використати файл, який належить іншому користувачу.
-
----
-
-## File delivery
-
-Для публічних файлів повертається прямий URL. URL для перегляду файлу формується за схемою:
-
-```
-S3_ENDPOINT + bucket + key
-```
-
-Приклад:
-
-```
-http://localhost:9000/<bucket>/users/{userId}/avatars/{uuid}.jpg
-```
-
-У production-середовищі цей URL може бути замінений на CDN:
-
-```
-CLOUDFRONT_BASE_URL + key
+```powershell
+> docker history journeyproject-api-distroless
+IMAGE          CREATED             CREATED BY                                      SIZE      COMMENT
+cf7a79c70c7a   About an hour ago   CMD ["apps/api/dist/main.js"]                   0B        buildkit.dockerfile.v0
+<missing>      About an hour ago   EXPOSE map[3015/tcp:{}]                         0B        buildkit.dockerfile.v0
+<missing>      About an hour ago   USER nonroot                                    0B        buildkit.dockerfile.v0
+<missing>      About an hour ago   COPY /app/apps/api/dist ./apps/api/dist # bu…   190kB     buildkit.dockerfile.v0
+<missing>      3 hours ago         COPY /app/apps/api/package*.json ./apps/api/…   1.62kB    buildkit.dockerfile.v0<missing>      3 hours ago         COPY /app/package*.json ./ # buildkit           990kB     buildkit.dockerfile.v0<missing>      3 hours ago         COPY /app/node_modules ./node_modules # buil…   142MB     buildkit.dockerfile.v0<missing>      3 hours ago         ENV NODE_ENV=production                         0B        buildkit.dockerfile.v0<missing>      3 hours ago         WORKDIR /app                                    0B        buildkit.dockerfile.v0<missing>      N/A                 bazel build @nodejs22_amd64//:data              125MB
+<missing>      N/A                 bazel build @trixie//gcc-14-base/amd64:data_…   106kB
+<missing>      N/A                 bazel build @trixie//libgcc-s1/amd64:data_st…   184kB
+<missing>      N/A                 bazel build @trixie//libstdc++6/amd64:data_s…   2.64MB
+<missing>      N/A                 bazel build @trixie//libgomp1/amd64:data_sta…   349kB
+<missing>      N/A                 bazel build @trixie//zlib1g/amd64:data_statu…   161kB
+<missing>      N/A                 bazel build @trixie//libzstd1/amd64:data_sta…   855kB
+<missing>      N/A                 bazel build @trixie//libssl3t64/amd64:data_s…   7.99MB
+<missing>      N/A                 bazel build @trixie//libc6/amd64:data_statusd   13MB
+<missing>      N/A                 bazel build //common:cacerts_debian13_amd64     243kB
+<missing>      N/A                 bazel build //common:os_release_debian13        344B
+<missing>      N/A                 bazel build //static:nsswitch                   497B
+<missing>      N/A                 bazel build //common:tmp                        0B
+<missing>      N/A                 bazel build //common:group                      64B
+<missing>      N/A                 bazel build //common:home                       0B
+<missing>      N/A                 bazel build //common:passwd                     149B
+<missing>      N/A                 bazel build //common:rootfs                     0B
+<missing>      N/A                 bazel build @trixie//media-types/amd64:data_…   88.8kB
+<missing>      N/A                 bazel build @trixie//tzdata-legacy/amd64:dat…   819kB
+<missing>      N/A                 bazel build @trixie//tzdata/amd64:data_statu…   754kB
+<missing>      N/A                 bazel build @trixie//netbase/amd64:data_stat…   23.2kB
+<missing>      N/A                 bazel build @trixie//base-files/amd64:data_s…   273kB
 ```
 
-Для приватних файлів генерується signed download URL, який генерується бекендом через S3 SDK і діє обмежений час.
+### Висновок
 
-Задля виконання вимог завдання я використовую signed download підхід для аватарів користувачів.
+У цьому проєкті різниця між `prod` і `prod-distroless` виявилась невеликою, тому що основну частину розміру обох образів формують production dependencies, які копіюються у вигляді `node_modules` (~142 MB). \
 
-Запит на отримання URL файлу:
+`prod-distroless` все одно менший на декілька МБ, тому що має урізаний базовий образ, який не містить shell, package manager, зайвих утиліт.
 
+Отже, в цьому випадку головна перевага `prod-distroless` — не лише розмір, а й менша поверхня атаки та чистіший runtime.
+
+## 3 Перевірка non-root
+
+Звичайний production image:
+
+```bash
+> docker compose exec api id
+uid=1000(node) gid=1000(node) groups=1000(node)
 ```
-GET /api/files/{fileId}
+
+Результат - користувач uid=1000(node).
+
+Distroless production image:
+
+```bash
+> docker compose exec api-distroless id
+OCI runtime exec failed: exec failed: unable to start container process: exec: "id": executable file not found in $PATH: unknown
 ```
 
-Приклад відповіді:
+Distroless-образи не містять shell та звичних інструментів для інтерактивної перевірки, таких як sh, bash або whoami, тому можливості діагностики всередині контейнера обмежені.
 
-```json
-{
-  "id": "uuid",
-  "key": "users/{userId}/avatars/{uuid}.jpg",
-  "url": "<presignedUrl>",
-  "contentType": "image/jpeg",
-  "size": 0
-}
-```
+Гарантія запуску не від root забезпечується тим, що використовується distroless runtime base image з non-root підходом, і у Dockerfile явно вказано USER nonroot.

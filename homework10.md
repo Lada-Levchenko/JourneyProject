@@ -1,5 +1,11 @@
 # homework10.md
 
+Прошу зауважити, оскільки це монорепо, для запуску потрібно два env-файли:
+  - `.env` (є відповідний шаблон `.env.example`)
+  - `apps/api/.env.production` (є відповідний шаблон `apps/api/.env.production.example`)
+
+Змінні в них не дублюються. `.env` використовується для compose, і деякі змінні з нього прокидуються далі в контейнери.
+
 ## 1 Команди запуску
 
 ### Development
@@ -7,20 +13,19 @@
 Запуск API у режимі розробки з hot reload:
 
 ```bash
-docker compose -f compose.yml -f compose.dev.yml up --build
+docker compose -f compose.yml -f compose.dev.yml up -d --build
 ```
 
 ### Production-like
 
 ```bash
-docker compose -f compose.yml up --build
+docker compose -f compose.yml up -d --build
 ```
-
 
 ### Distroless profile
 
 ```bash
-docker compose --profile distroless up --build
+docker compose --profile distroless up -d --build
 ```
 
 ### Міграції та seed
@@ -106,12 +111,11 @@ cf7a79c70c7a   About an hour ago   CMD ["apps/api/dist/main.js"]                
 
 ### Висновок
 
-У цьому проєкті різниця між `prod` і `prod-distroless` виявилась невеликою, тому що основну частину розміру обох образів формують production dependencies, які копіюються у вигляді `node_modules` (~142 MB).  \
+У цьому проєкті різниця між `prod` і `prod-distroless` виявилась невеликою, тому що основну частину розміру обох образів формують production dependencies, які копіюються у вигляді `node_modules` (~142 MB). \
 
 `prod-distroless` все одно менший на декілька МБ, тому що має урізаний базовий образ, який не містить shell, package manager, зайвих утиліт.
 
 Отже, в цьому випадку головна перевага `prod-distroless` — не лише розмір, а й менша поверхня атаки та чистіший runtime.
-
 
 ## 3 Перевірка non-root
 
