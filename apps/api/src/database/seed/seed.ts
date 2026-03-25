@@ -13,10 +13,6 @@ import { productsSeed } from "./entities/products";
 import { ordersSeed } from "./entities/orders";
 
 async function seed() {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Seeding is disabled in production");
-  }
-
   await dataSource.initialize();
 
   try {
