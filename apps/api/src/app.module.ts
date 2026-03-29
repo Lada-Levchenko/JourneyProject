@@ -10,6 +10,7 @@ import configuration from "./config/configuration";
 import { AuthModule } from "./auth/auth.module";
 import { GqlConfigModule } from "./graphql/graphql.module";
 import { FilesModule } from "./files/files.module";
+import { RabbitmqModule } from "./rabbitmq/rabbitmq.module";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { FilesModule } from "./files/files.module";
     ProductsModule,
     OrdersModule,
     FilesModule,
+    RabbitmqModule,
   ],
   controllers: [AppController],
   providers: [AppService],
