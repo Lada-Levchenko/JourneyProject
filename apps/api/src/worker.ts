@@ -2,8 +2,8 @@ import { NestFactory } from "@nestjs/core";
 import { WorkerModule } from "./worker/worker.module";
 
 async function bootstrap() {
-  await NestFactory.createApplicationContext(WorkerModule);
-
-  process.stdin.resume();
+  const app = await NestFactory.createApplicationContext(WorkerModule);
+  app.enableShutdownHooks();
 }
+
 bootstrap();

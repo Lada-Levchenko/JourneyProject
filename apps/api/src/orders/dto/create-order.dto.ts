@@ -1,6 +1,6 @@
 import { IsArray, IsOptional, IsUUID, ValidateNested } from "class-validator";
-// import { Type } from "class-transformer";
 import { CreateOrderItemDto } from "./create-order-item-dto";
+import { Type } from "class-transformer";
 
 export class CreateOrderDto {
   @IsUUID()
@@ -8,7 +8,7 @@ export class CreateOrderDto {
 
   @IsArray()
   @ValidateNested({ each: true })
-  // @Type(() => CreateOrderItemDto)
+  @Type(() => CreateOrderItemDto)
   items: CreateOrderItemDto[];
 
   @IsOptional()

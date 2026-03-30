@@ -17,7 +17,7 @@ import { OrdersFilterInput } from "./dto/orders-filter.input";
 import { OrdersPaginationInput } from "./dto/orders-pagination.input";
 import { OrdersConnection } from "./dto/orders-connection.type";
 import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 
 @Injectable()
 export class OrdersService {
@@ -67,6 +67,19 @@ export class OrdersService {
       await this.createOrderItems(queryRunner, items, productsById, order);
 
       await queryRunner.commitTransaction();
+
+      const message = {
+        messageId: randomUUID(),
+        orderId: order.id,
+        createdAt: new Date().toISOString(),
+        attempt: 0,
+        eventName: "order.created",
+        producer: "orders-api",
+        idempotencyKey,
+      };
+
+      await this.rabbitMQService.publishOrder(message);
+
       return await queryRunner.manager.findOneOrFail(Order, {
         where: { id: order.id },
         relations: ["items"],
@@ -206,18 +219,8 @@ export class OrdersService {
       idempotencyKey,
       status: OrderStatus.PENDING,
     });
-    const order = queryRunner.manager.save(orderEntity);
 
-    const message = {
-      messageId: uuidv4(),
-      orderId: order.id,
-      createdAt: new Date().toISOString(),
-      attempt: 0,
-      eventName: "order.created",
-      producer: "orders-api",
-    };
-
-    await this.rabbitMQService.publishOrder(message);
+    const order = await queryRunner.manager.save(orderEntity);
 
     return order;
   }

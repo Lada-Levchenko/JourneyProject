@@ -1,4 +1,5 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 
 import { Order } from "../orders/order.entity";
@@ -9,7 +10,12 @@ import { DuplicateMessageError } from "./errors/duplicate-message.error";
 
 @Injectable()
 export class OrdersProcessor {
-  constructor(private readonly dataSource: DataSource) {}
+  private readonly logger = new Logger(OrdersProcessor.name);
+
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+  ) {}
 
   async process(data: any) {
     return this.dataSource.transaction(async (manager) => {
@@ -34,12 +40,16 @@ export class OrdersProcessor {
         throw new NonRetryableError("Order not found");
       }
 
-      this.simulateWork();
+      await this.simulateWork();
 
       order.status = OrderStatus.COMPLETED;
       order.processedAt = new Date();
 
       await manager.save(order);
+
+      this.logger.log(
+        `Order marked as completed: orderId=${data.orderId}, messageId=${data.messageId ?? null}`,
+      );
     });
   }
 

@@ -46,6 +46,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - internal
       - public
@@ -93,10 +95,13 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+    # ports:
+    #   - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql
     networks:
       - internal
+      # - public # temporary, for easier access during development
 
   migrate:
     build:
@@ -107,6 +112,9 @@ services:
       - ./apps/api/.env.production
     environment:
       NODE_ENV: production
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
     depends_on:
       postgres:
         condition: service_healthy
@@ -125,6 +133,9 @@ services:
       - ./apps/api/.env.production
     environment:
       NODE_ENV: production
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
     depends_on:
       postgres:
         condition: service_healthy
@@ -174,12 +185,21 @@ services:
     container_name: rabbitmq
     restart: unless-stopped
     ports:
-      - "15672:15672" # Web UI
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - internal
+      - public
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
 volumes:
   pgdata:
