@@ -16,6 +16,8 @@ import { OrderStatus } from "./order-status.enum";
 import { OrdersFilterInput } from "./dto/orders-filter.input";
 import { OrdersPaginationInput } from "./dto/orders-pagination.input";
 import { OrdersConnection } from "./dto/orders-connection.type";
+import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
+import { randomUUID } from "crypto";
 
 @Injectable()
 export class OrdersService {
@@ -23,6 +25,7 @@ export class OrdersService {
     private readonly dataSource: DataSource,
     @InjectRepository(Order)
     private readonly ordersRepository: Repository<Order>,
+    private readonly rabbitMQService: RabbitMQService,
   ) {}
 
   async createOrder(dto: CreateOrderDto): Promise<Order> {
@@ -64,6 +67,19 @@ export class OrdersService {
       await this.createOrderItems(queryRunner, items, productsById, order);
 
       await queryRunner.commitTransaction();
+
+      const message = {
+        messageId: randomUUID(),
+        orderId: order.id,
+        createdAt: new Date().toISOString(),
+        attempt: 0,
+        eventName: "order.created",
+        producer: "orders-api",
+        idempotencyKey,
+      };
+
+      await this.rabbitMQService.publishOrder(message);
+
       return await queryRunner.manager.findOneOrFail(Order, {
         where: { id: order.id },
         relations: ["items"],
@@ -100,7 +116,7 @@ export class OrdersService {
         const alreadyPurchased = await queryRunner.manager.exists(OrderItem, {
           where: {
             productId: product.id,
-            order: { userId, status: OrderStatus.PAID },
+            order: { userId, status: OrderStatus.COMPLETED },
           },
           relations: ["order"],
         });
@@ -198,12 +214,15 @@ export class OrdersService {
     userId: string,
     idempotencyKey?: string,
   ) {
-    const order = queryRunner.manager.create(Order, {
+    const orderEntity = queryRunner.manager.create(Order, {
       userId,
       idempotencyKey,
-      status: OrderStatus.CREATED,
+      status: OrderStatus.PENDING,
     });
-    return queryRunner.manager.save(order);
+
+    const order = await queryRunner.manager.save(orderEntity);
+
+    return order;
   }
 
   private async createOrderItems(
