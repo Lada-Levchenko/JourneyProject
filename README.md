@@ -1,4 +1,19 @@
-# homework10.md
+# Домашнє завдання: Orders API + RabbitMQ Worker
+
+## Опис
+
+У цьому проєкті реалізовано:
+
+- API для створення замовлення;
+- асинхронну обробку замовлення через RabbitMQ;
+- worker-процес для обробки повідомлень;
+- retry-механізм;
+- DLQ (dead-letter queue);
+- idempotency на рівні обробки повідомлень.
+
+---
+
+## Як запустити
 
 Прошу зауважити, оскільки це монорепо, для запуску потрібно два env-файли:
 
@@ -7,135 +22,152 @@
 
 Змінні в них не дублюються. `.env` використовується для compose, і деякі змінні з нього прокидуються далі в контейнери.
 
-## 1 Команди запуску
-
-### Development
-
-Запуск API у режимі розробки з hot reload:
-
-```bash
-docker compose -f compose.yml -f compose.dev.yml up -d --build
-```
-
-### Production-like
-
 ```bash
 docker compose -f compose.yml up -d --build
 ```
 
-### Distroless profile
+## Топологія RabbitMQ
+
+У системі використовується така топологія:
+
+### Exchange
+
+- `orders.exchange`
+- тип: `direct`
+
+### Queues
+
+- `orders.process` — основна черга для обробки замовлень
+- `orders.dlq` — черга для повідомлень, які не вдалося обробити успішно
+
+### Routing keys
+
+- `orders.process`
+- `orders.dlq`
+
+---
+
+## Що куди летить
+
+### Публікація нового замовлення
+
+Після створення замовлення API публікує повідомлення в:
+
+- **exchange**: `orders.exchange`
+- **routing key**: `orders.process`
+
+Повідомлення потрапляє в чергу:
+
+- `orders.process`
+
+---
+
+### Retry
+
+Якщо під час обробки сталася retryable-помилка, worker:
+
+- збільшує `attempt`
+- повторно публікує повідомлення в:
+  - **exchange**: `orders.exchange`
+  - **routing key**: `orders.process`
+
+Тобто повідомлення знову повертається в `orders.process`.
+
+---
+
+### DLQ
+
+Якщо:
+
+- помилка є `NonRetryableError`, або
+- кількість спроб перевищила `MAX_ATTEMPTS`,
+
+повідомлення публікується в:
+
+- **exchange**: `orders.exchange`
+- **routing key**: `orders.dlq`
+
+і потрапляє в:
+
+- `orders.dlq`
+
+---
+
+## Як перевірити через RabbitMQ Management UI
+
+RabbitMQ Management UI доступний за адресою:
+
+```text
+http://localhost:15672
+```
+
+Логін і пароль:
+
+- username: значення `RABBITMQ_DEFAULT_USER`
+- password: значення `RABBITMQ_DEFAULT_PASS`
+
+---
+
+## Який retry-механізм обрано
+
+У проєкті використано **application-level retry**.
+
+Якщо worker отримує retryable-помилку:
+
+1. читає поточне значення `attempt`;
+2. якщо `attempt < MAX_ATTEMPTS`, формує нове повідомлення;
+3. збільшує `attempt` на 1;
+4. через `setTimeout(...)` повторно публікує повідомлення в `orders.process`.
+
+---
+
+## Як відтворити сценарії
+
+## 1. Happy path
+
+### Приклад запиту
 
 ```bash
-docker compose --profile distroless up -d --build
+curl -X POST http://localhost:3015/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "11111111-1111-1111-1111-111111111111",
+    "items": [
+      {
+        "productId": "22222222-2222-2222-2222-222222222222",
+        "quantity": 2
+      },
+      {
+        "productId": "33333333-3333-3333-3333-333333333333",
+        "quantity": 1
+      }
+    ],
+    "idempotencyKey": "44444444-4444-4444-4444-444444444444"
+  }'
 ```
 
-### Міграції та seed
+## 4. Idempotency
 
-Через profile:
+1. Надіслати повідомлення з певним `messageId`.
+2. Дочекатися успішної обробки.
+3. Повторно надіслати **те саме повідомлення** з тим самим `messageId`.
+4. Перевірити, що повторної бізнес-обробки не сталося.
 
-```bash
-docker compose --profile tools up --build
-```
+---
 
-або:
+## Як реалізована idempotency
 
-```bash
-docker compose run --rm migrate
-docker compose run --rm seed
-```
+Idempotency реалізована через таблицю `ProcessedMessages`.
 
-## 2 Докази оптимізації
+### Принцип роботи
 
-### `docker image ls`
+Перед основною обробкою повідомлення worker намагається вставити запис у `ProcessedMessages`:
 
-```powershell
-REPOSITORY                      TAG       IMAGE ID       CREATED             SIZE
-journeyproject-api              latest    badb1e6d2a87   21 minutes ago      306MB
-journeyproject-api-distroless   latest    cf7a79c70c7a   About an hour ago   295MB
-```
+- `handler`
+- `messageId`
+- `idempotencyKey`
 
-### `docker history <image>`
+Якщо вставка проходить успішно, повідомлення вважається новим і обробка продовжується.
 
-```powershell
-> docker history journeyproject-api
-IMAGE          CREATED          CREATED BY                                      SIZE      COMMENT
-badb1e6d2a87   23 minutes ago   CMD ["node" "apps/api/dist/main.js"]            0B        buildkit.dockerfile.v0
-<missing>      23 minutes ago   EXPOSE map[3015/tcp:{}]                         0B        buildkit.dockerfile.v0
-<missing>      23 minutes ago   USER node                                       0B        buildkit.dockerfile.v0
-<missing>      23 minutes ago   COPY /app/apps/api/dist ./apps/api/dist # bu…   190kB     buildkit.dockerfile.v0
-<missing>      23 minutes ago   COPY /app/apps/api/package*.json ./apps/api/…   1.62kB    buildkit.dockerfile.v0
-<missing>      23 minutes ago   COPY /app/package*.json ./ # buildkit           990kB     buildkit.dockerfile.v0
-<missing>      23 minutes ago   COPY /app/node_modules ./node_modules # buil…   142MB     buildkit.dockerfile.v0
-<missing>      23 minutes ago   ENV NODE_ENV=production                         0B        buildkit.dockerfile.v0
-<missing>      2 days ago       WORKDIR /app                                    0B        buildkit.dockerfile.v0
-<missing>      7 days ago       CMD ["node"]                                    0B        buildkit.dockerfile.v0
-<missing>      7 days ago       ENTRYPOINT ["docker-entrypoint.sh"]             0B        buildkit.dockerfile.v0
-<missing>      7 days ago       COPY docker-entrypoint.sh /usr/local/bin/ # …   388B      buildkit.dockerfile.v0
-<missing>      7 days ago       RUN /bin/sh -c apk add --no-cache --virtual …   5.36MB    buildkit.dockerfile.v0
-<missing>      7 days ago       ENV YARN_VERSION=1.22.22                        0B        buildkit.dockerfile.v0
-<missing>      7 days ago       RUN /bin/sh -c addgroup -g 1000 node     && …   149MB     buildkit.dockerfile.v0
-<missing>      7 days ago       ENV NODE_VERSION=22.22.1                        0B        buildkit.dockerfile.v0
-<missing>      6 weeks ago      CMD ["/bin/sh"]                                 0B        buildkit.dockerfile.v0
-<missing>      6 weeks ago      ADD alpine-minirootfs-3.23.3-x86_64.tar.gz /…   8.44MB    buildkit.dockerfile.v0
-```
-
-```powershell
-> docker history journeyproject-api-distroless
-IMAGE          CREATED             CREATED BY                                      SIZE      COMMENT
-cf7a79c70c7a   About an hour ago   CMD ["apps/api/dist/main.js"]                   0B        buildkit.dockerfile.v0
-<missing>      About an hour ago   EXPOSE map[3015/tcp:{}]                         0B        buildkit.dockerfile.v0
-<missing>      About an hour ago   USER nonroot                                    0B        buildkit.dockerfile.v0
-<missing>      About an hour ago   COPY /app/apps/api/dist ./apps/api/dist # bu…   190kB     buildkit.dockerfile.v0
-<missing>      3 hours ago         COPY /app/apps/api/package*.json ./apps/api/…   1.62kB    buildkit.dockerfile.v0<missing>      3 hours ago         COPY /app/package*.json ./ # buildkit           990kB     buildkit.dockerfile.v0<missing>      3 hours ago         COPY /app/node_modules ./node_modules # buil…   142MB     buildkit.dockerfile.v0<missing>      3 hours ago         ENV NODE_ENV=production                         0B        buildkit.dockerfile.v0<missing>      3 hours ago         WORKDIR /app                                    0B        buildkit.dockerfile.v0<missing>      N/A                 bazel build @nodejs22_amd64//:data              125MB
-<missing>      N/A                 bazel build @trixie//gcc-14-base/amd64:data_…   106kB
-<missing>      N/A                 bazel build @trixie//libgcc-s1/amd64:data_st…   184kB
-<missing>      N/A                 bazel build @trixie//libstdc++6/amd64:data_s…   2.64MB
-<missing>      N/A                 bazel build @trixie//libgomp1/amd64:data_sta…   349kB
-<missing>      N/A                 bazel build @trixie//zlib1g/amd64:data_statu…   161kB
-<missing>      N/A                 bazel build @trixie//libzstd1/amd64:data_sta…   855kB
-<missing>      N/A                 bazel build @trixie//libssl3t64/amd64:data_s…   7.99MB
-<missing>      N/A                 bazel build @trixie//libc6/amd64:data_statusd   13MB
-<missing>      N/A                 bazel build //common:cacerts_debian13_amd64     243kB
-<missing>      N/A                 bazel build //common:os_release_debian13        344B
-<missing>      N/A                 bazel build //static:nsswitch                   497B
-<missing>      N/A                 bazel build //common:tmp                        0B
-<missing>      N/A                 bazel build //common:group                      64B
-<missing>      N/A                 bazel build //common:home                       0B
-<missing>      N/A                 bazel build //common:passwd                     149B
-<missing>      N/A                 bazel build //common:rootfs                     0B
-<missing>      N/A                 bazel build @trixie//media-types/amd64:data_…   88.8kB
-<missing>      N/A                 bazel build @trixie//tzdata-legacy/amd64:dat…   819kB
-<missing>      N/A                 bazel build @trixie//tzdata/amd64:data_statu…   754kB
-<missing>      N/A                 bazel build @trixie//netbase/amd64:data_stat…   23.2kB
-<missing>      N/A                 bazel build @trixie//base-files/amd64:data_s…   273kB
-```
-
-### Висновок
-
-У цьому проєкті різниця між `prod` і `prod-distroless` виявилась невеликою, тому що основну частину розміру обох образів формують production dependencies, які копіюються у вигляді `node_modules` (~142 MB). \
-
-`prod-distroless` все одно менший на декілька МБ, тому що має урізаний базовий образ, який не містить shell, package manager, зайвих утиліт.
-
-Отже, в цьому випадку головна перевага `prod-distroless` — не лише розмір, а й менша поверхня атаки та чистіший runtime.
-
-## 3 Перевірка non-root
-
-Звичайний production image:
-
-```bash
-> docker compose exec api id
-uid=1000(node) gid=1000(node) groups=1000(node)
-```
-
-Результат - користувач uid=1000(node).
-
-Distroless production image:
-
-```bash
-> docker compose exec api-distroless id
-OCI runtime exec failed: exec failed: unable to start container process: exec: "id": executable file not found in $PATH: unknown
-```
-
-Distroless-образи не містять shell та звичних інструментів для інтерактивної перевірки, таких як sh, bash або whoami, тому можливості діагностики всередині контейнера обмежені.
-
-Гарантія запуску не від root забезпечується тим, що використовується distroless runtime base image з non-root підходом, і у Dockerfile явно вказано USER nonroot.
+Якщо БД повертає помилку унікальності (`23505`), це означає, що таке повідомлення вже було оброблене раніше.
+У такому випадку worker кидає `DuplicateMessageError`, після чого повідомлення не обробляється повторно.
