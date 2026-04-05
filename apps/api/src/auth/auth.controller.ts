@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "./jwt-auth.guard";
-import { AuthUser } from "./types";
+import type { AuthUser } from "./types";
 
 type LoginBody = {
   email: string;

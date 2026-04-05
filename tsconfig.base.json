@@ -2,16 +2,14 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "node16",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "baseUrl": ".",
     "paths": {
-      "@types/*": ["packages/types/src/*"],
-      "@ui/*": ["packages/ui/src/*"],
-      "@utils/*": ["packages/utils/src/*"]
+      "@types/*": ["./packages/types/src/*"],
+      "@ui/*": ["./packages/ui/src/*"],
+      "@utils/*": ["./packages/utils/src/*"]
     }
-  },
-  "include": ["apps/**/*", "packages/**/*"]
+  }
 }

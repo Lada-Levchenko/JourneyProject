@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package payments;
+
+service Payments {
+  rpc Authorize (AuthorizeRequest) returns (AuthorizeResponse);
+  rpc GetPaymentStatus (GetPaymentStatusRequest) returns (GetPaymentStatusResponse);
+  rpc Capture (CaptureRequest) returns (CaptureResponse);
+  rpc Refund (RefundRequest) returns (RefundResponse);
+}
+
+message AuthorizeRequest {
+  string orderId = 1;
+  int64 amount = 2;
+  string currency = 3;
+  string idempotencyKey = 4;
+}
+
+message AuthorizeResponse {
+  string paymentId = 1;
+  string status = 2;
+}
+
+message GetPaymentStatusRequest {
+  string paymentId = 1;
+}
+
+message GetPaymentStatusResponse {
+  string paymentId = 1;
+  string status = 2;
+}
+
+message CaptureRequest {
+  string paymentId = 1;
+}
+
+message CaptureResponse {
+  string paymentId = 1;
+  string status = 2;
+}
+
+message RefundRequest {
+  string paymentId = 1;
+}
+
+message RefundResponse {
+  string paymentId = 1;
+  string status = 2;
+}

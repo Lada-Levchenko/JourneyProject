@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Query,
 } from "@nestjs/common";
@@ -25,5 +26,10 @@ export class OrdersController {
   @Get()
   async listOrders(@Query("userId") userId?: string) {
     return this.ordersService.listOrders(userId);
+  }
+
+  @Post(":id/pay")
+  pay(@Param("id") id: string) {
+    return this.ordersService.payOrder(id);
   }
 }

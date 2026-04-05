@@ -59,7 +59,7 @@ async function seed() {
         id: orderSeed.id,
         userId: user.id,
         idempotencyKey: orderSeed.idempotencyKey,
-        status: OrderStatus.PENDING,
+        status: OrderStatus.PAYMENT_PENDING,
       });
 
       for (const item of orderSeed.items) {
