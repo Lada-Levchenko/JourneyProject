@@ -11,7 +11,7 @@ import { FilesService } from "./files.service";
 import { CurrentUser } from "../common/errors/decorators/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
-import { AuthUser } from "../auth/types";
+import type { AuthUser } from "../auth/types";
 import { PresignUploadDto } from "./dto/presign-upload.dto";
 import { CompleteUploadDto } from "./dto/complete-upload.dto";
 import { FileType } from "./enums/file-type.enum";

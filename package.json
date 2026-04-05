@@ -15,10 +15,12 @@
     "dev:web": "npm --workspace web run dev",
     "dev:mobile": "npm --workspace mobile run start",
     "dev:api": "npm --workspace api run dev",
+    "dev:payments": "npm --workspace payments run dev",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "build:web": "npm --workspace web run build",
     "build:mobile": "npm --workspace mobile run build",
     "build:api": "npm --workspace api run build",
+    "build:payments": "npm --workspace payments run build",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"apps/**/*.{ts,tsx,js,jsx}\" \"packages/**/*.{ts,tsx,js,jsx}\""
@@ -26,7 +28,6 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.6.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.0",

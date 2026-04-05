@@ -1,0 +1,25 @@
+{
+  "name": "payments",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "nest start",
+    "dev": "nest start --watch",
+    "build": "nest build"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.3",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/microservices": "^11.1.18",
+    "@nestjs/platform-express": "^11.1.12",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/testing": "^11.0.1",
+    "@types/node": "^25.5.2",
+    "supertest": "^7.0.0"
+  }
+}

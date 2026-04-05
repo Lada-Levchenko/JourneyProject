@@ -1,15 +1,18 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { DataSource, In, Repository } from "typeorm";
+import { DataSource, In, QueryRunner, Repository } from "typeorm";
 import { Order } from "./order.entity";
 import { OrderItem } from "./order-item.entity";
 import { Product } from "../products/product.entity";
 import { CreateOrderDto } from "./dto/create-order.dto";
+import * as microservices from "@nestjs/microservices";
 import { PurchasePolicy } from "../products/purchase-policy.enum";
 import { ProductType } from "../products/product-type.enum";
 import { OrderStatus } from "./order-status.enum";
@@ -18,15 +21,25 @@ import { OrdersPaginationInput } from "./dto/orders-pagination.input";
 import { OrdersConnection } from "./dto/orders-connection.type";
 import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
 import { randomUUID } from "crypto";
+import { PaymentsGrpcService } from "./payments.grpc";
+import { firstValueFrom, timeout } from "rxjs";
 
 @Injectable()
 export class OrdersService {
+  private paymentsService: PaymentsGrpcService;
   constructor(
     private readonly dataSource: DataSource,
     @InjectRepository(Order)
     private readonly ordersRepository: Repository<Order>,
     private readonly rabbitMQService: RabbitMQService,
+    @Inject("PAYMENTS_PACKAGE")
+    private client: microservices.ClientGrpc,
   ) {}
+
+  onModuleInit() {
+    this.paymentsService =
+      this.client.getService<PaymentsGrpcService>("Payments");
+  }
 
   async createOrder(dto: CreateOrderDto): Promise<Order> {
     const { userId, items, idempotencyKey } = dto;
@@ -68,18 +81,6 @@ export class OrdersService {
 
       await queryRunner.commitTransaction();
 
-      const message = {
-        messageId: randomUUID(),
-        orderId: order.id,
-        createdAt: new Date().toISOString(),
-        attempt: 0,
-        eventName: "order.created",
-        producer: "orders-api",
-        idempotencyKey,
-      };
-
-      await this.rabbitMQService.publishOrder(message);
-
       return await queryRunner.manager.findOneOrFail(Order, {
         where: { id: order.id },
         relations: ["items"],
@@ -92,8 +93,60 @@ export class OrdersService {
     }
   }
 
+  async payOrder(orderId: string) {
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+      relations: ["items"],
+    });
+
+    if (!order) throw new NotFoundException();
+    if (order.status !== OrderStatus.PAYMENT_PENDING)
+      throw new BadRequestException("Order cannot be paid");
+
+    const amount = this.calculateOrderAmountCents(order);
+
+    const payment = await firstValueFrom(
+      this.paymentsService
+        .Authorize({
+          orderId: order.id,
+          amount,
+          currency: "USD",
+        })
+        .pipe(timeout(Number(process.env.PAYMENTS_GRPC_TIMEOUT_MS) || 3000)),
+    );
+
+    if (payment.status === "AUTHORIZED") {
+      order.status = OrderStatus.PAID;
+      await this.ordersRepository.save(order);
+
+      const message = {
+        messageId: randomUUID(),
+        orderId: order.id,
+        // createdAt: new Date().toISOString(),
+        // attempt: 0,
+        // eventName: "order.created",
+        // producer: "orders-api",
+        idempotencyKey: order.idempotencyKey,
+      };
+
+      await this.rabbitMQService.publishOrder(message);
+    } else {
+      order.status = OrderStatus.PAYMENT_FAILED;
+      await this.ordersRepository.save(order);
+    }
+
+    return payment;
+  }
+  calculateOrderAmountCents(order: Order): number {
+    return order.items.reduce(
+      (sum, item) =>
+        sum + Math.round(Number(item.priceAtPurchase) * 100) * item.quantity,
+      0,
+    );
+  }
+
   private async findExistingOrder(
-    queryRunner: any,
+    queryRunner: QueryRunner,
     userId: string,
     idempotencyKey?: string,
   ) {
@@ -105,7 +158,7 @@ export class OrdersService {
   }
 
   private async ensureOneTimePurchase(
-    queryRunner: any,
+    queryRunner: QueryRunner,
     userId: string,
     items: CreateOrderDto["items"],
     productsById: Map<string, Product>,
@@ -130,7 +183,7 @@ export class OrdersService {
   }
 
   private async loadProductsWithLocking(
-    queryRunner: any,
+    queryRunner: QueryRunner,
     items: CreateOrderDto["items"],
   ): Promise<Map<string, Product>> {
     const productIds = [...new Set(items.map((i) => i.productId))];
@@ -210,14 +263,14 @@ export class OrdersService {
   }
 
   private async createOrderEntity(
-    queryRunner: any,
+    queryRunner: QueryRunner,
     userId: string,
     idempotencyKey?: string,
-  ) {
+  ): Promise<Order> {
     const orderEntity = queryRunner.manager.create(Order, {
       userId,
       idempotencyKey,
-      status: OrderStatus.PENDING,
+      status: OrderStatus.PAYMENT_PENDING,
     });
 
     const order = await queryRunner.manager.save(orderEntity);
@@ -226,7 +279,7 @@ export class OrdersService {
   }
 
   private async createOrderItems(
-    queryRunner: any,
+    queryRunner: QueryRunner,
     items: CreateOrderDto["items"],
     productsById: Map<string, Product>,
     order: Order,
