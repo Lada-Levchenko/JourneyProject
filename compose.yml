@@ -64,6 +64,8 @@ services:
       NODE_ENV: production
     ports:
       - "${PAYMENTS_GRPC_PORT:-50051}:50051"
+    networks:
+      - internal
 
   api-distroless:
     build:
@@ -113,7 +115,7 @@ services:
       - pgdata:/var/lib/postgresql
     networks:
       - internal
-      # - public # temporary, for easier access during development
+      - public # temporary, for easier access during development
 
   migrate:
     build:

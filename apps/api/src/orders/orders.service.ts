@@ -100,7 +100,7 @@ export class OrdersService {
     });
 
     if (!order) throw new NotFoundException();
-    if (order.status !== OrderStatus.CREATED)
+    if (order.status !== OrderStatus.PAYMENT_PENDING)
       throw new BadRequestException("Order cannot be paid");
 
     const amount = this.calculateOrderAmountCents(order);

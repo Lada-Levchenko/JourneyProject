@@ -1,0 +1,55 @@
+# ---------- deps stage ----------
+FROM node:22-alpine AS deps
+WORKDIR /app
+
+COPY package*.json ./
+COPY apps/payments/package*.json ./apps/payments/
+COPY packages ./packages
+
+RUN npm --workspace payments ci
+
+# ---------- jobs stage ----------
+FROM node:22-alpine AS jobs
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# ---------- build stage ----------
+FROM node:22-alpine AS build
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package*.json ./
+COPY apps/payments ./apps/payments
+COPY packages ./packages
+
+RUN npm run build:payments
+
+# ---------- prod-deps stage ----------
+FROM node:22-alpine AS prod-deps
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package*.json ./
+COPY apps/payments/package*.json ./apps/payments/
+COPY packages ./packages
+
+RUN npm --workspace payments ci --omit=dev
+
+# ---------- production runtime ----------
+FROM node:22-alpine AS prod
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=prod-deps /app/package*.json ./
+COPY --from=prod-deps /app/apps/payments/package*.json ./apps/payments/
+
+COPY --from=build /app/apps/payments/dist ./apps/payments/dist
+COPY --from=build /app/packages ./packages
+
+USER node
+
+EXPOSE 3015
+CMD ["node", "apps/payments/dist/main.js"]
