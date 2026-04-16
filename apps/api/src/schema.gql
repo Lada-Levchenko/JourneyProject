@@ -1,0 +1,91 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Order {
+  createdAt: DateTime!
+  id: ID!
+  idempotencyKey: String
+  items: [OrderItem!]!
+  status: OrderStatus!
+  updatedAt: DateTime!
+}
+
+type OrderItem {
+  id: ID!
+  priceAtPurchase: String!
+  product: Product!
+  quantity: Int!
+}
+
+enum OrderStatus {
+  CANCELLED
+  COMPLETED
+  CREATED
+  PAID
+}
+
+type OrdersConnection {
+  nodes: [Order!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input OrdersFilterInput {
+  dateFrom: DateTime
+  dateTo: DateTime
+  status: OrderStatus
+}
+
+input OrdersPaginationInput {
+  cursor: String
+  limit: Int = 20
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+}
+
+type Product {
+  category: ProductCategory!
+  createdAt: DateTime!
+  id: ID!
+  isActive: Boolean!
+  orderItems: [OrderItem!]!
+  price: Float
+  purchasePolicy: PurchasePolicy!
+  stock: Float
+  title: String!
+  type: ProductType!
+  updatedAt: DateTime!
+}
+
+enum ProductCategory {
+  CELEBRATION_BUNDLE
+  JOURNEY_THEME
+  POSTER
+  SUPPORT
+}
+
+enum ProductType {
+  DIGITAL
+  DONATION
+  PHYSICAL
+}
+
+enum PurchasePolicy {
+  ONE_TIME
+  REPEATABLE
+}
+
+type Query {
+  hello: String!
+  orders(filter: OrdersFilterInput, pagination: OrdersPaginationInput): OrdersConnection!
+  testError: String!
+}

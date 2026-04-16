@@ -15,6 +15,10 @@ export class ProductsService {
     return this.productsRepository.save(product);
   }
 
+  async findById(id: string): Promise<Product | null> {
+    return this.productsRepository.findOne({ where: { id } });
+  }
+
   async findByIds(ids: string[]): Promise<Product[]> {
     if (ids.length === 0) {
       return [];
