@@ -6,6 +6,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "esModuleInterop": true,
+    //"declaration": true,
     "removeComments": true,
     "outDir": "dist",
     "rootDir": "src",
@@ -13,7 +14,7 @@
     "incremental": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": false,
-    "skipLibCheck": true
+    "types": ["node"]
   },
   "watchOptions": {
     "watchFile": "fixedPollingInterval",

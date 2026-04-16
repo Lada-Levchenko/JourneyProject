@@ -9,6 +9,7 @@ import { ConfigService } from "@nestjs/config";
 import { OrdersProcessor } from "./orders.processor";
 import { DuplicateMessageError } from "./errors/duplicate-message.error";
 import { NonRetryableError } from "./errors/non-retryable.error";
+import { OrderMessage } from "../common/types/message.types";
 
 @Injectable()
 export class OrdersConsumer implements OnModuleInit, OnModuleDestroy {
@@ -84,56 +85,87 @@ export class OrdersConsumer implements OnModuleInit, OnModuleDestroy {
 
     await this.channel.bindQueue("orders.dlq", "orders.exchange", "orders.dlq");
 
-    this.channel.prefetch(1);
+    await this.channel.prefetch(1);
 
-    await this.channel.consume("orders.process", async (msg) => {
-      if (!msg) return;
+    await this.channel.consume(
+      "orders.process",
+      async (msg: amqp.ConsumeMessage | null) => {
+        if (!msg) return;
 
-      const data = JSON.parse(msg.content.toString());
-      const attempt = data.attempt ?? 0;
-      const messageId = data.messageId ?? msg.properties.messageId ?? null;
-      const orderId = data.orderId ?? null;
-
-      this.logMessage({
-        messageId,
-        orderId,
-        attempt,
-        result: "received",
-      });
-
-      try {
-        await this.processor.process(data);
+        const data = JSON.parse(msg.content.toString());
+        const attempt = data.attempt ?? 0;
+        const messageId = data.messageId ?? msg.properties.messageId ?? null;
+        const orderId = data.orderId ?? null;
 
         this.logMessage({
           messageId,
           orderId,
           attempt,
-          result: "success",
+          result: "received",
         });
 
-        this.channel.ack(msg);
-      } catch (err) {
-        const errorReason = this.getShortErrorReason(err);
+        try {
+          await this.processor.process(data);
 
-        this.logger.error(
-          `Worker processing failed: messageId=${messageId}, orderId=${orderId}, attempt=${attempt}, reason=${errorReason}`,
-          err instanceof Error ? err.stack : undefined,
-        );
-
-        if (err instanceof DuplicateMessageError) {
           this.logMessage({
             messageId,
             orderId,
             attempt,
-            result: "duplicate",
-            errorReason,
+            result: "success",
           });
 
           this.channel.ack(msg);
-          return;
-        }
+        } catch (err) {
+          const errorReason = this.getShortErrorReason(err);
 
-        if (err instanceof NonRetryableError) {
+          this.logger.error(
+            `Worker processing failed: messageId=${messageId}, orderId=${orderId}, attempt=${attempt}, reason=${errorReason}`,
+            err instanceof Error ? err.stack : undefined,
+          );
+
+          if (err instanceof DuplicateMessageError) {
+            this.logMessage({
+              messageId,
+              orderId,
+              attempt,
+              result: "duplicate",
+              errorReason,
+            });
+
+            this.channel.ack(msg);
+            return;
+          }
+
+          if (err instanceof NonRetryableError) {
+            this.sendToDlq(data);
+
+            this.logMessage({
+              messageId,
+              orderId,
+              attempt,
+              result: "dlq",
+              errorReason,
+            });
+
+            this.channel.ack(msg);
+            return;
+          }
+
+          if (attempt < this.MAX_ATTEMPTS) {
+            this.retryMessage(data, attempt);
+
+            this.logMessage({
+              messageId,
+              orderId,
+              attempt,
+              result: "retry",
+              errorReason,
+            });
+
+            this.channel.ack(msg);
+            return;
+          }
+
           this.sendToDlq(data);
 
           this.logMessage({
@@ -145,40 +177,12 @@ export class OrdersConsumer implements OnModuleInit, OnModuleDestroy {
           });
 
           this.channel.ack(msg);
-          return;
         }
-
-        if (attempt < this.MAX_ATTEMPTS) {
-          this.retryMessage(data, attempt);
-
-          this.logMessage({
-            messageId,
-            orderId,
-            attempt,
-            result: "retry",
-            errorReason,
-          });
-
-          this.channel.ack(msg);
-          return;
-        }
-
-        this.sendToDlq(data);
-
-        this.logMessage({
-          messageId,
-          orderId,
-          attempt,
-          result: "dlq",
-          errorReason,
-        });
-
-        this.channel.ack(msg);
-      }
-    });
+      },
+    );
   }
 
-  private retryMessage(data: any, attempt: number) {
+  private retryMessage(data: OrderMessage, attempt: number) {
     const retryMessage = {
       ...data,
       attempt: attempt + 1,
@@ -200,7 +204,7 @@ export class OrdersConsumer implements OnModuleInit, OnModuleDestroy {
     }, delayMs);
   }
 
-  private sendToDlq(data: any) {
+  private sendToDlq(data: OrderMessage) {
     this.channel.publish(
       "orders.exchange",
       "orders.dlq",
@@ -213,7 +217,7 @@ export class OrdersConsumer implements OnModuleInit, OnModuleDestroy {
     );
 
     this.logger.warn(
-      `Message sent to DLQ: messageId=${data.messageId ?? null}, orderId=${data.orderId ?? null}, attempt=${data.attempt ?? 0}`,
+      `Message sent to DLQ: messageId=${data.messageId ?? null}, orderId=${data.orderId ?? null}`,
     );
   }
 

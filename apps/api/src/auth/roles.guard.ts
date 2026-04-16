@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
-import { AuthUser } from "./types";
+import type { AuthUser } from "./types";
 import { ROLES_KEY } from "./roles.decorator";
 import { GlobalRole } from "../users/global-role.enum";
 

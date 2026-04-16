@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as amqp from "amqplib";
+import { OrderMessage } from "../common/types/message.types";
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit {
@@ -31,7 +32,7 @@ export class RabbitMQService implements OnModuleInit {
     );
   }
 
-  async publishOrder(message: any) {
+  async publishOrder(message: OrderMessage) {
     this.channel.publish(
       "orders.exchange",
       "orders.process",

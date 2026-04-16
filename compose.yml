@@ -53,6 +53,20 @@ services:
       - public
     command: ["node", "apps/api/dist/worker.js"]
 
+  payments:
+    build:
+      context: .
+      dockerfile: apps/payments/Dockerfile.prod
+      target: prod
+    env_file:
+      - ./apps/api/.env.production
+    environment:
+      NODE_ENV: production
+    ports:
+      - "${PAYMENTS_GRPC_PORT:-50051}:50051"
+    networks:
+      - internal
+
   api-distroless:
     build:
       context: .
@@ -95,13 +109,13 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
-    # ports:
-    #   - "5432:5432"
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql
     networks:
       - internal
-      # - public # temporary, for easier access during development
+      - public # temporary, for easier access during development
 
   migrate:
     build:

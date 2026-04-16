@@ -7,6 +7,7 @@ import { OrderStatus } from "../orders/order-status.enum";
 import { ProcessedMessage } from "./idempotency/processed-message.entity";
 import { NonRetryableError } from "./errors/non-retryable.error";
 import { DuplicateMessageError } from "./errors/duplicate-message.error";
+import { OrderMessage } from "../common/types/message.types";
 
 @Injectable()
 export class OrdersProcessor {
@@ -17,7 +18,7 @@ export class OrdersProcessor {
     private readonly dataSource: DataSource,
   ) {}
 
-  async process(data: any) {
+  async process(data: OrderMessage) {
     return this.dataSource.transaction(async (manager) => {
       try {
         await manager.insert(ProcessedMessage, {
@@ -25,8 +26,13 @@ export class OrdersProcessor {
           messageId: data.messageId,
           idempotencyKey: data.idempotencyKey ?? null,
         });
-      } catch (e: any) {
-        if (e.code === "23505") {
+      } catch (e: unknown) {
+        if (
+          typeof e === "object" &&
+          e !== null &&
+          "code" in e &&
+          (e as { code?: string }).code === "23505"
+        ) {
           throw new DuplicateMessageError();
         }
         throw e;
