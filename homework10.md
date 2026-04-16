@@ -1,9 +1,8 @@
 # homework10.md
 
 Прошу зауважити, оскільки це монорепо, для запуску потрібно два env-файли:
-
-- `.env` (є відповідний шаблон `.env.example`)
-- `apps/api/.env.production` (є відповідний шаблон `apps/api/.env.production.example`)
+  - `.env` (є відповідний шаблон `.env.example`)
+  - `apps/api/.env.production` (є відповідний шаблон `apps/api/.env.production.example`)
 
 Змінні в них не дублюються. `.env` використовується для compose, і деякі змінні з нього прокидуються далі в контейнери.
 
