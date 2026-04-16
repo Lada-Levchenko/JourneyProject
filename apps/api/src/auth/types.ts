@@ -7,7 +7,7 @@ export interface JwtPayload {
 }
 
 export interface AuthUser {
-  sub: string;
+  id: string;
   email: string;
   globalRole: GlobalRole;
 }

@@ -3,12 +3,15 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
 import { Order } from "../orders/order.entity";
 import { GlobalRole } from "./global-role.enum";
+import { FileRecord } from "../files/file-record.entity";
 
 @Entity("users")
 @Index("IDX_users_email_unique", ["email"], { unique: true })
@@ -35,6 +38,13 @@ export class User {
     default: GlobalRole.USER,
   })
   globalRole: GlobalRole;
+
+  @Column({ nullable: true })
+  avatarFileId?: string;
+
+  @ManyToOne(() => FileRecord)
+  @JoinColumn({ name: "avatarFileId" })
+  avatarFile?: FileRecord;
 
   @OneToMany(() => Order, (order) => order.user)
   orders: Order[];
