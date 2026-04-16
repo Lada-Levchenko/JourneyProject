@@ -60,4 +60,8 @@ export class Order {
   @Field(() => GraphQLISODateTime)
   @UpdateDateColumn({ type: "timestamptz", name: "updated_at" })
   updatedAt: Date;
+
+  @Field(() => GraphQLISODateTime)
+  @CreateDateColumn({ type: "timestamptz", name: "processed_at" })
+  processedAt: Date;
 }

@@ -14,8 +14,10 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
+      forbidNonWhitelisted: true,
     }),
   );
+
   const port = process.env.INTERNAL_PORT ?? 3015;
   await app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

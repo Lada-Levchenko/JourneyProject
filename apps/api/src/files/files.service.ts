@@ -35,19 +35,20 @@ export class FilesService {
     @InjectRepository(FileRecord)
     private readonly filesRepository: Repository<FileRecord>,
   ) {
-    this.s3Bucket = this.configService.get<string>("AWS_S3_BUCKET")!;
+    this.s3Bucket = this.configService.getOrThrow<string>("AWS_S3_BUCKET");
     this.s3ExternalEndpoint =
       this.configService.get<string>("AWS_S3_EXTERNAL_ENDPOINT") ||
-      this.configService.get<string>("AWS_S3_ENDPOINT")!;
-    const region = this.configService.get<string>("AWS_REGION");
-    const accessKeyId = this.configService.get<string>("AWS_ACCESS_KEY_ID")!;
-    const secretAccessKey = this.configService.get<string>(
+      this.configService.getOrThrow<string>("AWS_S3_ENDPOINT");
+    const region = this.configService.getOrThrow<string>("AWS_REGION");
+    const accessKeyId =
+      this.configService.getOrThrow<string>("AWS_ACCESS_KEY_ID");
+    const secretAccessKey = this.configService.getOrThrow<string>(
       "AWS_SECRET_ACCESS_KEY",
-    )!;
+    );
 
     this.s3Internal = new S3Client({
       region,
-      endpoint: this.configService.get<string>("AWS_S3_ENDPOINT")!,
+      endpoint: this.configService.getOrThrow<string>("AWS_S3_ENDPOINT"),
       credentials: {
         accessKeyId,
         secretAccessKey,
