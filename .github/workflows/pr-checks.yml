@@ -18,8 +18,8 @@ jobs:
 
       - run: npm --workspace api ci
 
-      - run: npm --workspace api lint
-      - run: npm --workspace payments lint
+      - run: npm --workspace api run lint
+      - run: npm --workspace payments run lint
 
       - run: npm run build:api
       - run: npm run build:payments
