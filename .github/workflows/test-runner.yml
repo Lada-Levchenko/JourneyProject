@@ -1,0 +1,14 @@
+name: test-runner
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: self-hosted
+
+    steps:
+      - name: Check system
+        run: |
+          echo "Runner works"
+          docker --version
+          kubectl get nodes

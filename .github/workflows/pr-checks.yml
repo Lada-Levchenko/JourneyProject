@@ -1,0 +1,31 @@
+name: pr-checks
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  checks:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - run: npm ci
+
+      - run: npm --workspace api run lint
+      - run: npm --workspace payments run lint
+
+      - run: npm run build:api
+      - run: npm run build:payments
+
+      - name: Docker build API (includes worker)
+        run: docker build -f apps/api/Dockerfile.prod .
+
+      - name: Docker build Payments
+        run: docker build -f apps/payments/Dockerfile.prod .
