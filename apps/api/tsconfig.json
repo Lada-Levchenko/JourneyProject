@@ -22,5 +22,5 @@
     "synchronousWatchDirectory": true,
     "excludeDirectories": ["**/node_modules", "dist"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "tsconfig.spec.json"]
 }
