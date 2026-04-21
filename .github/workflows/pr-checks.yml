@@ -25,7 +25,7 @@ jobs:
       - run: npm run build:payments
 
       - name: Docker build API (includes worker)
-        run: docker build -f apps/api/Dockerfile.prod .
+        run: docker build --progress=plain -f apps/api/Dockerfile.prod .
 
       - name: Docker build Payments
         run: docker build -f apps/payments/Dockerfile.prod .
