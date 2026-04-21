@@ -14,7 +14,7 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": false,
     "skipLibCheck": true,
-    "types": ["node", "jest"]
+    "types": ["node"]
   },
   "watchOptions": {
     "watchFile": "fixedPollingInterval",
