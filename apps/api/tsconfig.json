@@ -13,7 +13,8 @@
     "incremental": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node", "jest"]
   },
   "watchOptions": {
     "watchFile": "fixedPollingInterval",

@@ -1,4 +1,4 @@
-import js from "@eslint/js";
+// import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-plugin-prettier";
 import react from "eslint-plugin-react";
@@ -7,7 +7,10 @@ import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
   {
-    ignores: ["**/{.next,node_modules,dist,build,docs}/**"],
+    ignores: [
+      "**/{.next,node_modules,dist,build,docs}/**",
+      "**/jest.config.js",
+    ],
   },
 
   js.configs.recommended,
@@ -30,16 +33,16 @@ export default [
   },
 
   // Не включаем type-aware linting для eslint config файлов
-  {
-    files: [
-      "eslint.config.js",
-      "apps/*/eslint.config.js",
-      "apps/*/eslint.config.mjs",
-      "packages/*/eslint.config.js",
-      "packages/*/eslint.config.mjs",
-    ],
-    extends: [tseslint.configs.disableTypeChecked],
-  },
+  // {
+  //   files: [
+  //     "eslint.config.js",
+  //     "apps/*/eslint.config.js",
+  //     "apps/*/eslint.config.mjs",
+  //     "packages/*/eslint.config.js",
+  //     "packages/*/eslint.config.mjs",
+  //   ],
+  //   extends: [tseslint.configs.disableTypeChecked],
+  // },
 
   {
     files: ["apps/api/src/**/*.ts"],
