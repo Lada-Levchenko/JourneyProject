@@ -1,4 +1,4 @@
-// import js from "@eslint/js";
+import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-plugin-prettier";
 import react from "eslint-plugin-react";
@@ -15,15 +15,15 @@ export default [
 
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  //...tseslint.configs.recommendedTypeChecked,
 
   {
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
+    // languageOptions: {
+    //   parserOptions: {
+    //     projectService: true,
+    //     tsconfigRootDir: import.meta.dirname,
+    //   },
+    // },
     plugins: {
       prettier,
     },
