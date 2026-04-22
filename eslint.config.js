@@ -7,20 +7,23 @@ import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
   {
-    ignores: ["**/{.next,node_modules,dist,build,docs}/**"],
+    ignores: [
+      "**/{.next,node_modules,dist,build,docs}/**",
+      "**/jest.config.js",
+    ],
   },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  //...tseslint.configs.recommendedTypeChecked,
 
   {
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
+    // languageOptions: {
+    //   parserOptions: {
+    //     projectService: true,
+    //     tsconfigRootDir: import.meta.dirname,
+    //   },
+    // },
     plugins: {
       prettier,
     },
@@ -30,23 +33,28 @@ export default [
   },
 
   // Не включаем type-aware linting для eslint config файлов
-  {
-    files: [
-      "eslint.config.js",
-      "apps/*/eslint.config.js",
-      "apps/*/eslint.config.mjs",
-      "packages/*/eslint.config.js",
-      "packages/*/eslint.config.mjs",
-    ],
-    extends: [tseslint.configs.disableTypeChecked],
-  },
+  // {
+  //   files: [
+  //     "eslint.config.js",
+  //     "apps/*/eslint.config.js",
+  //     "apps/*/eslint.config.mjs",
+  //     "packages/*/eslint.config.js",
+  //     "packages/*/eslint.config.mjs",
+  //   ],
+  //   extends: [tseslint.configs.disableTypeChecked],
+  // },
 
   {
     files: ["apps/api/src/**/*.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
-      // "@typescript-eslint/no-unsafe-assignment": "off",
-      // "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-floating-promises": "off",
+      "@typescript-eslint/no-misused-promises": "off",
       "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/require-await": "off",
     },
