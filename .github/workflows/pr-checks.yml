@@ -21,6 +21,9 @@ jobs:
       - run: npm --workspace api run lint
       - run: npm --workspace payments run lint
 
+      - name: Run API tests
+        run: npm --workspace api run test
+
       - run: npm run build:api
       - run: npm run build:payments
 

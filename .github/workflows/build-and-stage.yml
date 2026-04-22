@@ -1,0 +1,73 @@
+name: build-and-stage
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Set image tag
+        id: vars
+        run: echo "TAG=sha-${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push API
+        run: |
+          docker build -f apps/api/Dockerfile.prod \
+            -t ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }} .
+          docker push ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }}
+
+      - name: Build & Push Payments
+        run: |
+          docker build -f apps/payments/Dockerfile.prod \
+            -t ghcr.io/${{ github.repository }}/payments:${{ steps.vars.outputs.TAG }} .
+          docker push ghcr.io/${{ github.repository }}/payments:${{ steps.vars.outputs.TAG }}
+
+      - name: Get API image digest
+        id: digest
+        run: |
+          docker inspect ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }} \
+            --format='{{index .RepoDigests 0}}' > digest.txt
+
+      - name: Create release manifest
+        run: |
+          echo '{
+            "commit": "${{ github.sha }}",
+            "services": {
+              "api": {
+                "image": "ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }}"
+              },
+              "worker": {
+                "image": "ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }}"
+              },
+              "payments": {
+                "image": "ghcr.io/${{ github.repository }}/payments:${{ steps.vars.outputs.TAG }}"
+              }
+            }
+          }' > release-manifest.json
+
+      - name: Upload manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-manifest
+          path: release-manifest.json
