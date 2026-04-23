@@ -44,15 +44,35 @@ jobs:
         run: |
           echo "TAG=sha-$env:GITHUB_SHA" >> $env:GITHUB_OUTPUT
 
+      - name: Set image vars
+        id: image_vars
+        shell: powershell
+        run: |
+          $owner = "${{ github.repository_owner }}".ToLowerInvariant()
+          "OWNER_LC=$owner" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "TAG=sha-$env:GITHUB_SHA" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
       - name: Build API image
         shell: powershell
         working-directory: ${{ github.workspace }}
-        run: docker build -f apps/api/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ github.repository_owner }}/journeyproject-api:${{ steps.vars.outputs.TAG }} .
+        run: |
+          docker build -f apps/api/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api:${{ steps.image_vars.outputs.TAG }} .
+
+      - name: Push API image
+        shell: powershell
+        run: |
+          docker push ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api:${{ steps.image_vars.outputs.TAG }}
 
       - name: Build Payments image
         shell: powershell
         working-directory: ${{ github.workspace }}
-        run: docker build -f apps/payments/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ github.repository_owner }}/journeyproject-payments:${{ steps.vars.outputs.TAG }} .
+        run: |
+          docker build -f apps/payments/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-payments:${{ steps.image_vars.outputs.TAG }} .
+
+      - name: Push Payments image
+        shell: powershell
+        run: |
+          docker push ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-payments:${{ steps.image_vars.outputs.TAG }}
 
       - name: Get API image digest
         id: digest
