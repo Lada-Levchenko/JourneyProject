@@ -11,12 +11,22 @@ import { AuthModule } from "./auth/auth.module";
 import { GqlConfigModule } from "./graphql/graphql.module";
 import { FilesModule } from "./files/files.module";
 import { RabbitmqModule } from "./rabbitmq/rabbitmq.module";
+import { join } from "path";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.env.${process.env.NODE_ENV || "local"}`,
+      ignoreEnvFile: process.env.IGNORE_ENV_FILE === "true",
+      envFilePath: process.env.APP_ENV_FILE
+        ? [process.env.APP_ENV_FILE]
+        : [
+            join(
+              process.cwd(),
+              `apps/api/.env.${process.env.NODE_ENV || "local"}`,
+            ),
+            join(process.cwd(), `.env.${process.env.NODE_ENV || "local"}`),
+          ],
       load: [configuration],
     }),
     GqlConfigModule,
