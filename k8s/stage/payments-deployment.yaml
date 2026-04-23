@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api
+  name: payments
   namespace: stage
 spec:
   replicas: 1
@@ -9,36 +9,32 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: api
+      app: payments
   template:
     metadata:
       labels:
-        app: api
+        app: payments
     spec:
       containers:
-        - name: api
-          image: ghcr.io/placeholder/journeyproject-api:latest
+        - name: payments
+          image: ghcr.io/placeholder/journeyproject-payments:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 3015
+            - containerPort: 50051
           env:
             - name: NODE_ENV
               value: stage
-            - name: PORT
-              value: "3015"
           readinessProbe:
-            httpGet:
-              path: api/health
-              port: 3015
-            initialDelaySeconds: 20
+            tcpSocket:
+              port: 50051
+            initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 6
           livenessProbe:
-            httpGet:
-              path: api/health
-              port: 3015
-            initialDelaySeconds: 30
+            tcpSocket:
+              port: 50051
+            initialDelaySeconds: 25
             periodSeconds: 15
             timeoutSeconds: 3
             failureThreshold: 6
