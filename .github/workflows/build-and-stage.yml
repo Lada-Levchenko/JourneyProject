@@ -28,19 +28,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install deps
-        run: npm ci
-
-      - name: Set image tag
-        id: vars
-        run: echo "TAG=sha-${GITHUB_SHA}" >> $GITHUB_OUTPUT
-
       - name: Debug working directory
         shell: powershell
         run: |
           Write-Host "GITHUB_WORKSPACE=$env:GITHUB_WORKSPACE"
           Write-Host "PWD=$(Get-Location)"
           Get-ChildItem $env:GITHUB_WORKSPACE
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Set image tag
+        id: vars
+        shell: powershell
+        run: |
+          echo "TAG=sha-$env:GITHUB_SHA" >> $env:GITHUB_OUTPUT
 
       - name: Build API image
         shell: powershell
