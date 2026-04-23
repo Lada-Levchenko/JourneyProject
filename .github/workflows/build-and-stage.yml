@@ -21,11 +21,11 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install deps
-        run: npm ci
-
       - name: Login to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Install deps
+        run: npm ci
 
       - name: Set image tag
         id: vars
