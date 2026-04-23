@@ -35,9 +35,6 @@ jobs:
           Write-Host "PWD=$(Get-Location)"
           Get-ChildItem $env:GITHUB_WORKSPACE
 
-      - name: Install deps
-        run: npm ci
-
       - name: Set image tag
         id: vars
         shell: powershell
@@ -75,26 +72,37 @@ jobs:
           docker push ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-payments:${{ steps.image_vars.outputs.TAG }}
 
       - name: Get API image digest
-        id: digest
+        id: api_digest
+        shell: powershell
         run: |
-          docker inspect ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }} --format='{{index .RepoDigests 0}}' > digest.txt
+          docker inspect ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api:${{ steps.image_vars.outputs.TAG }} --format="{{index .RepoDigests 0}}" | Out-File -FilePath api-digest.txt -Encoding utf8
 
       - name: Create release manifest
+        shell: powershell
         run: |
-          echo '{
+          $manifest = @"
+          {
             "commit": "${{ github.sha }}",
             "services": {
               "api": {
-                "image": "ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }}"
+                "image": "ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api:${{ steps.image_vars.outputs.TAG }}"
               },
               "worker": {
-                "image": "ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }}"
+                "image": "ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api:${{ steps.image_vars.outputs.TAG }}"
               },
               "payments": {
-                "image": "ghcr.io/${{ github.repository }}/payments:${{ steps.vars.outputs.TAG }}"
+                "image": "ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-payments:${{ steps.image_vars.outputs.TAG }}"
               }
             }
-          }' > release-manifest.json
+          }
+          "@
+
+          $manifest | Out-File -FilePath release-manifest.json -Encoding utf8
+
+      - name: Show manifest
+        shell: powershell
+        run: |
+          Get-Content release-manifest.json
 
       - name: Upload manifest
         uses: actions/upload-artifact@v4
