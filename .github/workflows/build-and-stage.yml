@@ -36,19 +36,19 @@ jobs:
         run: echo "TAG=sha-${GITHUB_SHA}" >> $GITHUB_OUTPUT
 
       - name: Debug working directory
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "GITHUB_WORKSPACE=$env:GITHUB_WORKSPACE"
           Write-Host "PWD=$(Get-Location)"
           Get-ChildItem $env:GITHUB_WORKSPACE
 
       - name: Build API image
-        shell: pwsh
+        shell: powershell
         working-directory: ${{ github.workspace }}
         run: docker build -f apps/api/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ github.repository_owner }}/journeyproject-api:${{ steps.vars.outputs.TAG }} .
 
       - name: Build Payments image
-        shell: pwsh
+        shell: powershell
         working-directory: ${{ github.workspace }}
         run: docker build -f apps/payments/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ github.repository_owner }}/journeyproject-payments:${{ steps.vars.outputs.TAG }} .
 
