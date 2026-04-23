@@ -35,23 +35,27 @@ jobs:
         id: vars
         run: echo "TAG=sha-${GITHUB_SHA}" >> $GITHUB_OUTPUT
 
-      - name: Build & Push API
+      - name: Debug working directory
+        shell: pwsh
         run: |
-          docker build -f apps/api/Dockerfile.prod \
-            -t ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }} .
-          docker push ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }}
+          Write-Host "GITHUB_WORKSPACE=$env:GITHUB_WORKSPACE"
+          Write-Host "PWD=$(Get-Location)"
+          Get-ChildItem $env:GITHUB_WORKSPACE
 
-      - name: Build & Push Payments
-        run: |
-          docker build -f apps/payments/Dockerfile.prod \
-            -t ghcr.io/${{ github.repository }}/payments:${{ steps.vars.outputs.TAG }} .
-          docker push ghcr.io/${{ github.repository }}/payments:${{ steps.vars.outputs.TAG }}
+      - name: Build API image
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        run: docker build -f apps/api/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ github.repository_owner }}/journeyproject-api:${{ steps.vars.outputs.TAG }} .
+
+      - name: Build Payments image
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        run: docker build -f apps/payments/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ github.repository_owner }}/journeyproject-payments:${{ steps.vars.outputs.TAG }} .
 
       - name: Get API image digest
         id: digest
         run: |
-          docker inspect ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }} \
-            --format='{{index .RepoDigests 0}}' > digest.txt
+          docker inspect ghcr.io/${{ github.repository }}/api:${{ steps.vars.outputs.TAG }} --format='{{index .RepoDigests 0}}' > digest.txt
 
       - name: Create release manifest
         run: |
