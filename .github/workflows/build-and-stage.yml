@@ -71,12 +71,6 @@ jobs:
         run: |
           docker push ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-payments:${{ steps.image_vars.outputs.TAG }}
 
-      - name: Get API image digest
-        id: api_digest
-        shell: powershell
-        run: |
-          docker inspect ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api:${{ steps.image_vars.outputs.TAG }} --format="{{index .RepoDigests 0}}" | Out-File -FilePath api-digest.txt -Encoding utf8
-
       - name: Create release manifest
         shell: powershell
         run: |
@@ -109,3 +103,69 @@ jobs:
         with:
           name: release-manifest
           path: release-manifest.json
+
+  deploy-stage:
+    needs: build
+    runs-on: self-hosted
+    environment:
+      name: stage
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: release-manifest
+          path: .
+
+      - name: Show manifest
+        shell: powershell
+        run: |
+          Get-Content release-manifest.json
+
+      - name: Parse manifest
+        id: manifest
+        shell: powershell
+        run: |
+          $json = Get-Content release-manifest.json -Raw | ConvertFrom-Json
+          $image = $json.services.api.image
+          "API_IMAGE=$image" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Apply stage manifests
+        shell: powershell
+        run: |
+          kubectl apply -f k8s/stage/api-deployment.yaml
+          kubectl apply -f k8s/stage/api-service.yaml
+
+      - name: Set API image
+        shell: powershell
+        run: |
+          kubectl -n ${{ vars.K8S_NAMESPACE }} set image deployment/${{ vars.API_DEPLOYMENT_NAME }} ${{ vars.API_CONTAINER_NAME }}=${{ steps.manifest.outputs.API_IMAGE }}
+
+      - name: Wait for rollout
+        shell: powershell
+        run: |
+          kubectl -n ${{ vars.K8S_NAMESPACE }} rollout status deployment/${{ vars.API_DEPLOYMENT_NAME }} --timeout=180s
+
+      - name: Show resources
+        shell: powershell
+        run: |
+          kubectl -n ${{ vars.K8S_NAMESPACE }} get pods
+          kubectl -n ${{ vars.K8S_NAMESPACE }} get svc
+
+      - name: Smoke test
+        shell: powershell
+        run: |
+          $job = Start-Job -ScriptBlock {
+            kubectl -n stage port-forward svc/api 18080:3000
+          }
+          Start-Sleep -Seconds 8
+          try {
+            Invoke-WebRequest -Uri "http://127.0.0.1:18080${{ vars.API_HEALTH_PATH }}" -UseBasicParsing
+          }
+          finally {
+            Stop-Job $job
+            Remove-Job $job
+          }
