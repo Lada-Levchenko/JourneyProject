@@ -1,5 +1,6 @@
 services:
   api:
+    container_name: api
     build:
       context: .
       dockerfile: apps/api/Dockerfile.prod
@@ -23,11 +24,14 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     networks:
       - internal
       - public
 
   worker:
+    container_name: worker
     build:
       context: .
       dockerfile: apps/api/Dockerfile.prod
@@ -54,6 +58,7 @@ services:
     command: ["node", "apps/api/dist/worker.js"]
 
   payments:
+    container_name: payments
     build:
       context: .
       dockerfile: apps/payments/Dockerfile.prod
@@ -160,6 +165,7 @@ services:
     profiles: ["tools"]
 
   minio:
+    container_name: minio
     image: minio/minio:latest
     restart: unless-stopped
     environment:
@@ -209,7 +215,11 @@ services:
       - internal
       - public
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test:
+        [
+          "CMD-SHELL",
+          "rabbitmq-diagnostics -q ping && rabbitmq-diagnostics listeners | grep 5672",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20

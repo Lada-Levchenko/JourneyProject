@@ -63,7 +63,7 @@ export class ProductsService {
     }
 
     if (cursor) {
-      query.andWhere("product.id > :cursor", { cursor });
+      query.andWhere("product.id >= :cursor", { cursor });
     }
 
     query.orderBy("product.id", "ASC");
