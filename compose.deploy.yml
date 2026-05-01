@@ -1,0 +1,139 @@
+services:
+  api:
+    image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3015
+    ports:
+      - "${API_PORT:-3015}:3015"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - internal
+      - public
+    restart: unless-stopped
+
+  worker:
+    image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - internal
+      - public
+    command: ["node", "apps/api/dist/worker.js"]
+    restart: unless-stopped
+
+  payments:
+    image: ghcr.io/lada-levchenko/journeyproject-payments:${IMAGE_TAG}
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    ports:
+      - "${PAYMENTS_GRPC_PORT:-50051}:50051"
+    networks:
+      - internal
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+      - public
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio:/data
+    networks:
+      - internal
+      - public
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    restart: "no"
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local ${AWS_S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY}; do
+        echo 'waiting for minio...';
+        sleep 2;
+      done;
+      mc mb --ignore-existing local/${AWS_S3_BUCKET:-lesson9-files-private};
+      mc anonymous set none local/${AWS_S3_BUCKET:-lesson9-files-private};
+      echo 'minio bucket is ready';
+      "
+    networks:
+      - internal
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - internal
+      - public
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "rabbitmq-diagnostics -q ping && rabbitmq-diagnostics listeners | grep 5672",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  pgdata:
+  minio:
+  rabbitmq_data:
+
+networks:
+  internal:
+    internal: true
+  public:
