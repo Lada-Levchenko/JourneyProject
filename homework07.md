@@ -1,5 +1,82 @@
 # homework07.md
 
+## Що дороблено
+
+### 1) Виправлений запуск проєкту без workaround:
+
+- `@nestjs/cli` доданий у devDependencies
+
+### 2) Полагодджений GraphQL filter:
+
+- додані validator-декоратори
+
+### 3) runtime-приклади для "нічого не знайдено":
+
+- кейс із фільтром, що дає 0 результатів:
+
+```
+query ExampleQuery($pagination: OrdersPaginationInput, $filter: OrdersFilterInput) {
+	orders(pagination: $pagination, filter: $filter) {
+		nodes {
+			createdAt
+			id
+			idempotencyKey
+			items {
+				id
+				priceAtPurchase
+				product {
+					category
+					createdAt
+					id
+					isActive
+					price
+					purchasePolicy
+					stock
+					title
+					type
+					updatedAt
+				}
+				quantity
+			}
+			status
+			updatedAt
+		}
+		pageInfo {
+			endCursor
+			hasNextPage
+		}
+		totalCount
+	}
+}
+
+{
+  "pagination": {
+    "cursor": null,
+    "limit": 3
+  },
+  "filter": {
+    "dateFrom": "2100-01-01"
+  }
+}
+```
+
+Результат:
+
+```
+{
+  "data": {
+    "orders": {
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false
+      },
+      "totalCount": 0
+    }
+  }
+}
+```
+
 ## code-first vs schema-first
 
 У проєкті використовується підхід code-first, оскільки він уже побудований на основі TypeORM-сутностей і активно розвивається. code-first мінімізує дублювання коду та дозволяє автоматично підтримувати схему в актуальному стані відповідно до доменної моделі яка поки знаходиться в стані частих змін.
@@ -24,7 +101,6 @@ Resolver лише приймає `filter` та `pagination` аргументи, 
 Для реалізації пагінації було обрано підхід connection (OrdersConnection), оскільки він дозволяє передавати додаткову метаінформацію, наприклад totalCount, що є важливим елементом для пагінації
 
 Cursor будується на основі комбінованого ключа `createdAt + id`, що гарантує стабільне сортування навіть коли кілька записів мають однаковий `createdAt`.
-
 
 ## Виявлення проблеми N+1
 
