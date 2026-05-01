@@ -104,12 +104,12 @@ jobs:
         run: |
           IMAGE_TAG=$(python3 - <<'PY'
           import json
-          with open('release-manifest.json', 'r', encoding='utf-8') as f:
-            data = json.load(f)
+          with open('release-manifest.json', 'r', encoding='utf-8-sig') as f:
+              data = json.load(f)
           print(data['services']['api']['image'].split(':')[-1])
           PY
           )
-          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+              echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to stage via SSH
         uses: appleboy/ssh-action@v1.2.0
