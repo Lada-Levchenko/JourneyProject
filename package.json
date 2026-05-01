@@ -14,7 +14,7 @@
   "scripts": {
     "dev:web": "npm --workspace web run dev",
     "dev:mobile": "npm --workspace mobile run start",
-    "dev:api": "npm --workspace api run start:dev",
+    "dev:api": "npm --workspace api run dev",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "build:web": "npm --workspace web run build",
     "build:mobile": "npm --workspace mobile run build",

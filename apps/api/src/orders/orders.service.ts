@@ -6,12 +6,16 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { DataSource, In, Repository } from "typeorm";
-import { Order, OrderStatus } from "./order.entity";
+import { Order } from "./order.entity";
 import { OrderItem } from "./order-item.entity";
 import { Product } from "../products/product.entity";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { PurchasePolicy } from "../products/purchase-policy.enum";
 import { ProductType } from "../products/product-type.enum";
+import { OrderStatus } from "./order-status.enum";
+import { OrdersFilterInput } from "./dto/orders-filter.input";
+import { OrdersPaginationInput } from "./dto/orders-pagination.input";
+import { OrdersConnection } from "./dto/orders-connection.type";
 
 @Injectable()
 export class OrdersService {
@@ -248,5 +252,61 @@ export class OrdersService {
       order: { createdAt: "DESC" },
       where: userId ? { userId } : {},
     });
+  }
+
+  async findAll(
+    filter?: OrdersFilterInput,
+    pagination?: OrdersPaginationInput,
+  ): Promise<OrdersConnection> {
+    const qb = this.ordersRepository
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.items", "item")
+      .orderBy("order.createdAt", "DESC")
+      .addOrderBy("order.id", "DESC");
+
+    if (filter?.status) {
+      qb.andWhere("order.status = :status", { status: filter.status });
+    }
+
+    if (filter?.dateFrom) {
+      qb.andWhere("order.createdAt >= :dateFrom", {
+        dateFrom: filter.dateFrom,
+      });
+    }
+
+    if (filter?.dateTo) {
+      qb.andWhere("order.createdAt <= :dateTo", {
+        dateTo: filter.dateTo,
+      });
+    }
+
+    const limit = Math.min(pagination?.limit ?? 20, 50);
+
+    if (pagination?.cursor) {
+      const [createdAt, id] = pagination.cursor.split("|");
+
+      qb.andWhere(
+        `(order.createdAt < :createdAt
+        OR (order.createdAt = :createdAt AND order.id < :id))`,
+        { createdAt, id },
+      );
+    }
+
+    qb.take(limit);
+
+    const [orders, totalCount] = await qb.getManyAndCount();
+
+    const hasNextPage = orders.length === limit;
+
+    const last = orders[orders.length - 1];
+
+    return {
+      nodes: orders,
+      totalCount,
+      pageInfo: {
+        hasNextPage,
+        endCursor: last ? `${last.createdAt.toISOString()}|${last.id}` : null,
+      },
+    };
   }
 }
