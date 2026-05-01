@@ -87,7 +87,7 @@ jobs:
 
   deploy-stage:
     needs: build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment:
       name: stage
 
@@ -100,12 +100,16 @@ jobs:
 
       - name: Parse manifest
         id: manifest
-        shell: powershell
+        shell: bash
         run: |
-          $json = Get-Content release-manifest.json -Raw | ConvertFrom-Json
-          $apiImage = $json.services.api.image
-          $tag = $apiImage.Split(":")[-1]
-          "IMAGE_TAG=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          IMAGE_TAG=$(python3 - <<'PY'
+          import json
+          with open('release-manifest.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+          print(data['services']['api']['image'].split(':')[-1])
+          PY
+          )
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to stage via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -115,7 +119,7 @@ jobs:
           key: ${{ secrets.STAGE_SSH_KEY }}
           script: |
             set -e
-            cd ${{ secrets.STAGE_APP_DIR }}
+            cd "${{ vars.STAGE_APP_DIR }}"
 
             if grep -q '^IMAGE_TAG=' .env; then
               sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${{ steps.manifest.outputs.IMAGE_TAG }}/" .env
@@ -123,7 +127,7 @@ jobs:
               echo "IMAGE_TAG=${{ steps.manifest.outputs.IMAGE_TAG }}" >> .env
             fi
 
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ vars.GHCR_USERNAME }}" --password-stdin
             docker compose -f compose.deploy.yml pull
             docker compose -f compose.deploy.yml up -d
             docker compose -f compose.deploy.yml ps
