@@ -53,6 +53,17 @@ jobs:
         run: |
           docker push ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-payments:${{ steps.image_vars.outputs.TAG }}
 
+      - name: Build API jobs image
+        shell: powershell
+        working-directory: ${{ github.workspace }}
+        run: |
+          docker build --target jobs -f apps/api/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api-jobs:${{ steps.image_vars.outputs.TAG }} .
+
+      - name: Push API jobs image
+        shell: powershell
+        run: |
+          docker push ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api-jobs:${{ steps.image_vars.outputs.TAG }}
+
       - name: Create release manifest
         shell: powershell
         run: |
@@ -68,6 +79,9 @@ jobs:
               },
               "payments": {
                 "image": "ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-payments:${{ steps.image_vars.outputs.TAG }}"
+              },
+              "api-jobs": {
+                "image": "ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api-jobs:${{ steps.image_vars.outputs.TAG }}"
               }
             }
           }

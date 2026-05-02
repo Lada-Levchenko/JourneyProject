@@ -75,7 +75,7 @@ services:
     profiles: ["infra"]
 
   migrate:
-    image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    image: ghcr.io/lada-levchenko/journeyproject-api-jobs:${IMAGE_TAG}
     env_file:
       - .env
     environment:
@@ -90,7 +90,7 @@ services:
     profiles: ["jobs"]
 
   seed:
-    image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    image: ghcr.io/lada-levchenko/journeyproject-api-jobs:${IMAGE_TAG}
     env_file:
       - .env
     environment:
