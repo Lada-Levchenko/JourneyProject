@@ -40,7 +40,7 @@ jobs:
         shell: powershell
         working-directory: ${{ github.workspace }}
         run: |
-          docker build -f apps/api/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api:${{ steps.image_vars.outputs.TAG }} .
+          docker build --target prod -f apps/api/Dockerfile.prod --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t ghcr.io/${{ steps.image_vars.outputs.OWNER_LC }}/journeyproject-api:${{ steps.image_vars.outputs.TAG }} .
 
       - name: Push API image
         shell: powershell
