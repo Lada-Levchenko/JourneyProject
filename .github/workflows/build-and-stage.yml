@@ -116,7 +116,7 @@ jobs:
           key: ${{ secrets.STAGE_SSH_KEY }}
           script: |
             set -e
-            cd "${{ secrets.STAGE_APP_DIR }}"
+            cd "${{ vars.STAGE_APP_DIR }}"
 
             if grep -q '^IMAGE_TAG=' .env; then
               sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${{ steps.manifest.outputs.IMAGE_TAG }}/" .env
@@ -124,7 +124,7 @@ jobs:
               echo "IMAGE_TAG=${{ steps.manifest.outputs.IMAGE_TAG }}" >> .env
             fi
 
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ vars.GHCR_USERNAME }}" --password-stdin
 
             docker compose -f compose.deploy.yml --profile infra up -d
             docker compose -f compose.deploy.yml --profile jobs run --rm migrate
@@ -149,7 +149,7 @@ jobs:
             done
 
             echo "Smoke test failed"
-            cd "${{ secrets.STAGE_APP_DIR }}"
+            cd "${{ vars.STAGE_APP_DIR }}"
             docker compose -f compose.deploy.yml ps
             docker compose -f compose.deploy.yml logs --tail=100 api
             exit 1
