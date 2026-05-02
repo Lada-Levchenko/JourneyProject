@@ -13,7 +13,8 @@
     "incremental": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node"]
   },
   "watchOptions": {
     "watchFile": "fixedPollingInterval",
@@ -22,5 +23,5 @@
     "synchronousWatchDirectory": true,
     "excludeDirectories": ["**/node_modules", "dist"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "tsconfig.spec.json"]
 }

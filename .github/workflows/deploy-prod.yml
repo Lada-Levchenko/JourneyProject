@@ -1,0 +1,87 @@
+name: deploy-prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Immutable image tag to deploy to production (example: sha-13a472f65d2daf2694432a5393ebc87e02a5fe36)"
+        required: true
+        type: string
+      commit_sha:
+        description: "Optional commit SHA for logging"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    steps:
+      - name: Show deployment metadata
+        shell: bash
+        run: |
+          echo "Target environment: production"
+          echo "Image tag: ${{ inputs.image_tag }}"
+          echo "Commit SHA: ${{ inputs.commit_sha }}"
+          echo "API image: ghcr.io/lada-levchenko/journeyproject-api:${{ inputs.image_tag }}"
+          echo "Payments image: ghcr.io/lada-levchenko/journeyproject-payments:${{ inputs.image_tag }}"
+          echo "Jobs image: ghcr.io/lada-levchenko/journeyproject-api-jobs:${{ inputs.image_tag }}"
+
+      - name: Deploy to production
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ vars.PROD_APP_DIR }}"
+
+            if grep -q '^IMAGE_TAG=' .env; then
+              sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${{ inputs.image_tag }}/" .env
+            else
+              echo "IMAGE_TAG=${{ inputs.image_tag }}" >> .env
+            fi
+
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ vars.GHCR_USERNAME }}" --password-stdin
+
+            echo "Target environment: production"
+            echo "Image tag: ${{ inputs.image_tag }}"
+            echo "Commit SHA: ${{ inputs.commit_sha }}"
+
+            docker compose -f compose.deploy.yml --profile infra up -d
+            docker compose -f compose.deploy.yml --profile infra --profile jobs run --rm migrate
+            docker compose -f compose.deploy.yml --profile infra --profile app up -d
+            docker compose -f compose.deploy.yml ps
+
+      - name: Smoke test production API
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -e
+            for i in $(seq 1 15); do
+              if curl --fail --silent http://127.0.0.1:4015/api/health; then
+                echo "Production smoke test passed"
+                exit 0
+              fi
+              echo "Attempt $i failed, waiting..."
+              sleep 5
+            done
+
+            echo "Production smoke test failed"
+            cd "${{ vars.PROD_APP_DIR }}"
+            docker compose -f compose.deploy.yml ps
+            docker compose -f compose.deploy.yml logs --tail=100 api
+            exit 1

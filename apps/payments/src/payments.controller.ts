@@ -1,4 +1,4 @@
-import { Controller } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
 import { GrpcMethod } from "@nestjs/microservices";
 import { PaymentsService } from "./payments.service";
 import * as paymentsTypes from "./payments.types";
@@ -6,6 +6,14 @@ import * as paymentsTypes from "./payments.types";
 @Controller()
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
+
+  @Get("/health")
+  getHealth() {
+    return {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+    };
+  }
 
   @GrpcMethod("Payments", "Authorize")
   authorize(data: paymentsTypes.AuthorizeRequest) {

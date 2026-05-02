@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: stage
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/placeholder/journeyproject-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3015
+          env:
+            - name: NODE_ENV
+              value: stage
+            - name: PORT
+              value: "3015"
+          readinessProbe:
+            httpGet:
+              path: api/health
+              port: 3015
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: api/health
+              port: 3015
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 6

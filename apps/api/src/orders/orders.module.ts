@@ -18,10 +18,7 @@ import { ProductsModule } from "../products/products.module";
         transport: Transport.GRPC,
         options: {
           package: "payments",
-          protoPath: join(
-            __dirname,
-            "../../../../packages/contracts/payments.proto",
-          ),
+          protoPath: join(process.cwd(), "packages/contracts/payments.proto"),
           url: process.env.PAYMENTS_GRPC_URL || "localhost:50051",
         },
       },

@@ -9,7 +9,9 @@
     "db:generate": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:generate src/database/migrations/placeholder",
     "db:migrate": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run",
     "db:revert": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:revert",
-    "db:seed": "ts-node -r tsconfig-paths/register src/database/seed/seed.ts"
+    "db:seed": "ts-node -r tsconfig-paths/register src/database/seed/seed.ts",
+    "lint": "eslint . --ext .ts",
+    "test": "jest --config jest.config.js"
   },
   "dependencies": {
     "@apollo/server": "^4.13.0",
