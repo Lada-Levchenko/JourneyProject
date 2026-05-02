@@ -15,10 +15,13 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
+      payments:
+        condition: service_started
     networks:
       - internal
       - public
     restart: unless-stopped
+    profiles: ["app"]
 
   worker:
     image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
@@ -34,6 +37,7 @@ services:
       - public
     command: ["node", "apps/api/dist/worker.js"]
     restart: unless-stopped
+    profiles: ["app"]
 
   payments:
     image: ghcr.io/lada-levchenko/journeyproject-payments:${IMAGE_TAG}
@@ -46,6 +50,7 @@ services:
     networks:
       - internal
     restart: unless-stopped
+    profiles: ["app"]
 
   postgres:
     image: postgres:18
@@ -67,6 +72,37 @@ services:
     networks:
       - internal
       - public
+    profiles: ["infra"]
+
+  migrate:
+    image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["npm", "run", "db:migrate", "--workspace=api"]
+    networks:
+      - internal
+    restart: "no"
+    profiles: ["jobs"]
+
+  seed:
+    image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["npm", "run", "db:seed", "--workspace=api"]
+    networks:
+      - internal
+    restart: "no"
+    profiles: ["tools"]
 
   minio:
     image: minio/minio:latest
@@ -83,6 +119,7 @@ services:
     networks:
       - internal
       - public
+    profiles: ["infra"]
 
   minio-init:
     image: minio/mc:latest
@@ -102,6 +139,7 @@ services:
       "
     networks:
       - internal
+    profiles: ["infra"]
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -127,6 +165,7 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+    profiles: ["infra"]
 
 volumes:
   pgdata:
