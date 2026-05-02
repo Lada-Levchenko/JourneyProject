@@ -127,8 +127,8 @@ jobs:
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ vars.GHCR_USERNAME }}" --password-stdin
 
             docker compose -f compose.deploy.yml --profile infra up -d
-            docker compose -f compose.deploy.yml --profile jobs run --rm migrate
-            docker compose -f compose.deploy.yml --profile app up -d
+            docker compose -f compose.deploy.yml --profile infra --profile jobs run --rm migrate
+            docker compose -f compose.deploy.yml --profile infra --profile app up -d
             docker compose -f compose.deploy.yml ps
 
       - name: Smoke test stage API
