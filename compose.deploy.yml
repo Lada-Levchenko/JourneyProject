@@ -65,8 +65,6 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql
     networks:
@@ -146,7 +144,7 @@ services:
     container_name: rabbitmq
     restart: unless-stopped
     ports:
-      - "15672:15672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
