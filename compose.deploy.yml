@@ -1,6 +1,7 @@
 services:
   api:
     image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    container_name: stage-api
     env_file:
       - .env
     environment:
@@ -25,6 +26,7 @@ services:
 
   worker:
     image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    container_name: stage-worker
     env_file:
       - .env
     depends_on:
@@ -41,6 +43,7 @@ services:
 
   payments:
     image: ghcr.io/lada-levchenko/journeyproject-payments:${IMAGE_TAG}
+    container_name: stage-payments
     env_file:
       - .env
     environment:
@@ -54,6 +57,7 @@ services:
 
   postgres:
     image: postgres:18
+    container_name: stage-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -74,6 +78,7 @@ services:
 
   migrate:
     image: ghcr.io/lada-levchenko/journeyproject-api-jobs:${IMAGE_TAG}
+    container_name: stage-migrate
     env_file:
       - .env
     environment:
@@ -89,6 +94,7 @@ services:
 
   seed:
     image: ghcr.io/lada-levchenko/journeyproject-api-jobs:${IMAGE_TAG}
+    container_name: stage-seed
     env_file:
       - .env
     environment:
@@ -104,6 +110,7 @@ services:
 
   minio:
     image: minio/minio:latest
+    container_name: stage-minio
     restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
@@ -121,6 +128,7 @@ services:
 
   minio-init:
     image: minio/mc:latest
+    container_name: stage-minio-init
     depends_on:
       minio:
         condition: service_started
@@ -141,7 +149,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management
-    container_name: rabbitmq
+    container_name: stage-rabbitmq
     restart: unless-stopped
     ports:
       - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
