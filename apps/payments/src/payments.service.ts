@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { AuthorizeResponse, GetPaymentStatusResponse } from "./payments.types";
+import { randomUUID } from "crypto";
 
 type PaymentRecord = {
   paymentId: string;
@@ -23,7 +24,7 @@ export class PaymentsService {
       return this.payments.get(existingPaymentId)!;
     }
 
-    const paymentId = "pay_" + Date.now();
+    const paymentId = "pay_" + randomUUID();
 
     const record: PaymentRecord = {
       paymentId,
