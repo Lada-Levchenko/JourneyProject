@@ -1,0 +1,43 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+positions:
+  filename: /promtail/positions.yaml
+
+scrape_configs:
+  - job_name: docker-logs
+    docker_sd_configs:
+      - host: "unix:///var/run/docker.sock"
+        refresh_interval: 10s
+        filters:
+          - name: label
+            values: ["logging=promtail"]
+
+    relabel_configs:
+      - source_labels: [__meta_docker_container_label_logging]
+        regex: promtail
+        action: keep
+
+      - source_labels: [__meta_docker_container_id]
+        target_label: __path__
+        replacement: /var/lib/docker/containers/$1/*.log*
+
+      - source_labels: [__meta_docker_container_label_service]
+        target_label: service
+
+      - source_labels: [__meta_docker_container_label_environment]
+        target_label: environment
+
+      - source_labels: [__meta_docker_container_label_project]
+        target_label: project
+
+      - source_labels: [__meta_docker_container_name]
+        regex: "/(.*)"
+        target_label: container_name
+
+      - target_label: job
+        replacement: docker-logs

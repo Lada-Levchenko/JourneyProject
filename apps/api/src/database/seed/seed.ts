@@ -22,7 +22,10 @@ async function seed() {
     const orderItemsRepo = dataSource.getRepository(OrderItem);
 
     /* Users */
-    const adminPassword = process.env.SEED_ADMIN_PASSWORD || "admin123";
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+    if (!adminPassword) {
+      throw new Error("SEED_ADMIN_PASSWORD environment variable is required");
+    }
     const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
 
     const usersWithPasswords = usersSeed.map((user) => ({

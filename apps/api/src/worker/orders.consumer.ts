@@ -204,21 +204,29 @@ export class OrdersConsumer implements OnModuleInit, OnModuleDestroy {
     }, delayMs);
   }
 
-  private sendToDlq(data: OrderMessage) {
-    this.channel.publish(
-      "orders.exchange",
-      "orders.dlq",
-      Buffer.from(JSON.stringify(data)),
-      {
-        persistent: true,
-        messageId: data.messageId,
-        timestamp: Date.now(),
-      },
-    );
+  private sendToDlq(data: OrderMessage): boolean {
+    try {
+      this.channel.publish(
+        "orders.exchange",
+        "orders.dlq",
+        Buffer.from(JSON.stringify(data)),
+        {
+          persistent: true,
+          messageId: data.messageId,
+          timestamp: Date.now(),
+        },
+      );
 
-    this.logger.warn(
-      `Message sent to DLQ: messageId=${data.messageId ?? null}, orderId=${data.orderId ?? null}`,
-    );
+      this.logger.warn(
+        `Message sent to DLQ: messageId=${data.messageId ?? null}, orderId=${data.orderId ?? null}`,
+      );
+      return true;
+    } catch (err) {
+      this.logger.error(
+        `Failed to send message to DLQ: messageId=${data.messageId ?? null}, error=${err instanceof Error ? err.message : String(err)}`,
+      );
+      return false;
+    }
   }
 
   private getShortErrorReason(err: unknown): string {

@@ -14,7 +14,7 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": false,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
   "watchOptions": {
     "watchFile": "fixedPollingInterval",
@@ -23,5 +23,5 @@
     "synchronousWatchDirectory": true,
     "excludeDirectories": ["**/node_modules", "dist"]
   },
-  "include": ["src/**/*", "tsconfig.spec.json"]
+  "include": ["src/**/*", "tsconfig.spec.json", "src/test"]
 }

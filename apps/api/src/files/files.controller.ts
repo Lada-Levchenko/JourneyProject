@@ -35,7 +35,7 @@ export class FilesController {
 
   @Post("complete")
   async completeUpload(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthUser,
     @Body() dto: CompleteUploadDto,
   ) {
     const file = await this.filesService.completeUpload(user.id, dto.fileId);

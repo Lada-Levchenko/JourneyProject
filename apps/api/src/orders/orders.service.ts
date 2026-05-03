@@ -105,15 +105,22 @@ export class OrdersService {
 
     const amount = this.calculateOrderAmountCents(order);
 
-    const payment = await firstValueFrom(
-      this.paymentsService
-        .Authorize({
-          orderId: order.id,
-          amount,
-          currency: "USD",
-        })
-        .pipe(timeout(Number(process.env.PAYMENTS_GRPC_TIMEOUT_MS) || 3000)),
-    );
+    let payment;
+    try {
+      payment = await firstValueFrom(
+        this.paymentsService
+          .Authorize({
+            orderId: order.id,
+            amount,
+            currency: "USD",
+          })
+          .pipe(timeout(Number(process.env.PAYMENTS_GRPC_TIMEOUT_MS) || 3000)),
+      );
+    } catch (error) {
+      order.status = OrderStatus.PAYMENT_FAILED;
+      await this.ordersRepository.save(order);
+      throw error;
+    }
 
     if (payment.status === "AUTHORIZED") {
       order.status = OrderStatus.PAID;
