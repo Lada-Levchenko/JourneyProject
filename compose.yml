@@ -29,6 +29,11 @@ services:
     networks:
       - internal
       - public
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "api"
 
   worker:
     container_name: worker
@@ -56,6 +61,11 @@ services:
       - internal
       - public
     command: ["node", "apps/api/dist/worker.js"]
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "worker"
 
   payments:
     container_name: payments
@@ -71,6 +81,11 @@ services:
       - "${PAYMENTS_GRPC_PORT:-50051}:50051"
     networks:
       - internal
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "payments"
 
   api-distroless:
     build:
@@ -96,10 +111,17 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     networks:
       - internal
       - public
     profiles: ["distroless"]
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "api-distroless"
 
   postgres:
     image: postgres:18
@@ -120,7 +142,12 @@ services:
       - pgdata:/var/lib/postgresql
     networks:
       - internal
-      - public # temporary, for easier access during development
+      - public
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "postgres"
 
   migrate:
     build:
@@ -142,6 +169,11 @@ services:
       - internal
     restart: "no"
     profiles: ["tools"]
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "migrate"
 
   seed:
     build:
@@ -163,6 +195,11 @@ services:
       - internal
     restart: "no"
     profiles: ["tools"]
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "seed"
 
   minio:
     container_name: minio
@@ -180,6 +217,11 @@ services:
     networks:
       - internal
       - public
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "minio"
 
   minio-init:
     image: minio/mc:latest
@@ -199,6 +241,11 @@ services:
       "
     networks:
       - internal
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "minio-init"
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -224,6 +271,11 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+    labels:
+      logging: "promtail"
+      project: "journeyproject"
+      environment: "local"
+      service: "rabbitmq"
 
 volumes:
   pgdata:

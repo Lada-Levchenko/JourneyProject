@@ -5,8 +5,7 @@ services:
     ports:
       - "3100:3100"
     networks:
-      j-grafana-network:
-        ipv4_address: 172.20.0.3
+      - j-grafana-network
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml
       - "${LOKI_STORAGE_DIR}/index:/loki/index"
@@ -18,8 +17,7 @@ services:
     image: grafana/promtail:2.9.15
     container_name: promtail
     networks:
-      j-grafana-network:
-        ipv4_address: 172.20.0.4
+      - j-grafana-network
     ports:
       - "9080:9080"
     volumes:
@@ -36,14 +34,13 @@ services:
     image: grafana/grafana-oss:10.2.2
     container_name: grafana
     networks:
-      j-grafana-network:
-        ipv4_address: 172.20.0.2
+      - j-grafana-network
     ports:
       - "3000:3000"
     environment:
       - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
-      - GF_SECURITY_ADMIN_USER=rdn
-      - GF_SECURITY_ADMIN_PASSWORD=rdn
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-rdn}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-rdn}
     volumes:
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - grafana-storage:/var/lib/grafana
@@ -55,6 +52,3 @@ networks:
   j-grafana-network:
     name: j-grafana-network
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16

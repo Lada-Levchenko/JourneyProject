@@ -10,28 +10,34 @@ positions:
 
 scrape_configs:
   - job_name: docker-logs
-    # read Docker socket
     docker_sd_configs:
       - host: "unix:///var/run/docker.sock"
         refresh_interval: 10s
         filters:
-          - name: name
-            values: ["api", "rabbitmq", "payments", "worker"]
-    #  drop-rules
+          - name: label
+            values: ["logging=promtail"]
+
     relabel_configs:
-      # alternative filter-rules
-      - source_labels: [__meta_docker_container_name]
-        regex: "/(api|rabbitmq|payments|worker)$"
+      - source_labels: [__meta_docker_container_label_logging]
+        regex: promtail
         action: keep
-      # drop system containers
-      - source_labels: [__meta_docker_container_name]
-        regex: "/(grafana|loki|promtail)$"
-        action: drop
-      # select a path ID containers
-      - source_labels: ["__meta_docker_container_id"]
+
+      - source_labels: [__meta_docker_container_id]
         target_label: __path__
         replacement: /var/lib/docker/containers/$1/*.log*
-      # set name of container
-      - source_labels: ["__meta_docker_container_name"]
+
+      - source_labels: [__meta_docker_container_label_service]
+        target_label: service
+
+      - source_labels: [__meta_docker_container_label_environment]
+        target_label: environment
+
+      - source_labels: [__meta_docker_container_label_project]
+        target_label: project
+
+      - source_labels: [__meta_docker_container_name]
         regex: "/(.*)"
         target_label: container_name
+
+      - target_label: job
+        replacement: docker-logs
