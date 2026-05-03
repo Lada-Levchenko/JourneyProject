@@ -1,21 +1,11 @@
 services:
   api:
-    container_name: api
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile.prod
-      target: prod
+    image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    container_name: stage-api
     env_file:
-      - ./apps/api/.env.production
+      - .env
     environment:
       NODE_ENV: production
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
       PORT: 3015
     ports:
       - "${API_PORT:-3015}:3015"
@@ -26,27 +16,19 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
+      payments:
+        condition: service_started
     networks:
       - internal
       - public
+    restart: unless-stopped
+    profiles: ["app"]
 
   worker:
-    container_name: worker
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile.prod
-      target: prod
+    image: ghcr.io/lada-levchenko/journeyproject-api:${IMAGE_TAG}
+    container_name: stage-worker
     env_file:
-      - ./apps/api/.env.production
-    environment:
-      NODE_ENV: production
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,53 +38,26 @@ services:
       - internal
       - public
     command: ["node", "apps/api/dist/worker.js"]
+    restart: unless-stopped
+    profiles: ["app"]
 
   payments:
-    container_name: payments
-    build:
-      context: .
-      dockerfile: apps/payments/Dockerfile.prod
-      target: prod
+    image: ghcr.io/lada-levchenko/journeyproject-payments:${IMAGE_TAG}
+    container_name: stage-payments
     env_file:
-      - ./apps/api/.env.production
+      - .env
     environment:
       NODE_ENV: production
     ports:
       - "${PAYMENTS_GRPC_PORT:-50051}:50051"
     networks:
       - internal
-
-  api-distroless:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile.prod
-      target: prod-distroless
-    env_file:
-      - ./apps/api/.env.production
-    environment:
-      NODE_ENV: production
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
-      PORT: 3015
-    ports:
-      - "${API_DISTROLESS_PORT:-3016}:3015"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      minio:
-        condition: service_started
-    networks:
-      - internal
-      - public
-    profiles: ["distroless"]
+    restart: unless-stopped
+    profiles: ["app"]
 
   postgres:
     image: postgres:18
+    container_name: stage-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -114,26 +69,20 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql
     networks:
       - internal
-      - public # temporary, for easier access during development
+      - public
+    profiles: ["infra"]
 
   migrate:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile.prod
-      target: jobs
+    image: ghcr.io/lada-levchenko/journeyproject-api-jobs:${IMAGE_TAG}
+    container_name: stage-migrate
     env_file:
-      - ./apps/api/.env.production
+      - .env
     environment:
       NODE_ENV: production
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
     depends_on:
       postgres:
         condition: service_healthy
@@ -141,20 +90,15 @@ services:
     networks:
       - internal
     restart: "no"
-    profiles: ["tools"]
+    profiles: ["jobs"]
 
   seed:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile.prod
-      target: jobs
+    image: ghcr.io/lada-levchenko/journeyproject-api-jobs:${IMAGE_TAG}
+    container_name: stage-seed
     env_file:
-      - ./apps/api/.env.production
+      - .env
     environment:
       NODE_ENV: production
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
     depends_on:
       postgres:
         condition: service_healthy
@@ -165,8 +109,8 @@ services:
     profiles: ["tools"]
 
   minio:
-    container_name: minio
     image: minio/minio:latest
+    container_name: stage-minio
     restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
@@ -180,9 +124,11 @@ services:
     networks:
       - internal
       - public
+    profiles: ["infra"]
 
   minio-init:
     image: minio/mc:latest
+    container_name: stage-minio-init
     depends_on:
       minio:
         condition: service_started
@@ -199,10 +145,11 @@ services:
       "
     networks:
       - internal
+    profiles: ["infra"]
 
   rabbitmq:
     image: rabbitmq:3.13-management
-    container_name: rabbitmq
+    container_name: stage-rabbitmq
     restart: unless-stopped
     ports:
       - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
@@ -224,6 +171,7 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+    profiles: ["infra"]
 
 volumes:
   pgdata:
