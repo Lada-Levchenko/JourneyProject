@@ -269,6 +269,18 @@ Content-Type: application/json
 * `environment`
 * `project`
 
+На основі логів будуються дашборди з метриками для stage і prod середовищ.
+
+Їх можна переглянути за ендпоїнтом (меню > Dashboards):
+http://178.104.207.183:3000/
+
+Логін: stagemon
+Пароль: stagemonPass
+
+<img width="1907" height="966" alt="image" src="https://github.com/user-attachments/assets/8321d448-4a15-4f79-9a3e-19e4a677e394" />
+<img width="1908" height="422" alt="image" src="https://github.com/user-attachments/assets/1329b270-059a-4f99-b1e0-0a4d31f62bde" />
+
+
 ---
 
 ## CI/CD
