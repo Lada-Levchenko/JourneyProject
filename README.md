@@ -76,7 +76,7 @@ docker compose run --rm seed
 curl http://localhost:3015/api/health
 ```
 
----
+
 
 ## Лінтинг і тести
 
@@ -85,9 +85,11 @@ npm --workspace api run lint
 npm --workspace payments run lint
 
 npm --workspace api run test
----
+```
 
 Тести поки мінімальні, включають перевірку першого кроку основного сценарію.
+
+---
 
 ## Основний контур: створення та обробка замовлення
 
